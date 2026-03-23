@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Otto Transportes — Sistema de Gestão de Frota | Março 2026 v9</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#07090F;--ink2:#0D1220;--ink3:#131B2E;--ink4:#1A243A;--ink5:#202E46;
+  --gold:#FFBB00;--gold2:#FFC107;--goldf:#FFD040;--gold-dim:rgba(255,187,0,.15);--gold-glow:rgba(255,193,7,.3);
+  --em:#00D4AA;--em-dim:rgba(0,212,170,.1);--em-b:rgba(0,212,170,.35);
+  --danger:#FF3D5A;--danger-dim:rgba(255,61,90,.1);--danger-b:rgba(255,61,90,.3);
+  --warn:#FFB020;--warn-dim:rgba(255,176,32,.1);
+  --blue:#3B9EFF;--blue-dim:rgba(59,158,255,.1);
+  --purple:#9B59F5;
+  --text:#D8E2F5;--text2:#7A8BAB;--text3:#3E4F6A;
+  --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.11);
+  --r:8px;--r2:14px;
+  --topbar-h:4.0rem;--tabbar-h:3.1429rem;
+}
+html{font-size:14px;scroll-behavior:smooth}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--ink);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+
+/* ── TOPBAR ── */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:400;
+  height:var(--topbar-h);
+  background:#000000;
+  border-bottom:2px solid #FFBB00;
+  display:flex;align-items:center;padding:0 24px;gap:20px;
+}
+.logo-wrap{display:flex;align-items:center;gap:10px;flex-shrink:0;min-width:220px;}
+.logo-img{height:38px;max-width:110px;width:auto;display:block;object-fit:contain;}
+.logo-texts{}
+.logo-name{
+  font-family:'Rajdhani',sans-serif;font-size:1.2857rem;font-weight:700;
+  color:#fff;letter-spacing:2px;text-transform:uppercase;line-height:1;
+}
+.logo-sub{font-size:0.6429rem;color:#FFC107;letter-spacing:2.5px;text-transform:uppercase;margin-top:1px;font-weight:600}
+.topbar-spacer{flex:1}
+.topbar-right{display:flex;align-items:center;gap:14px;flex-shrink:0;min-width:220px;justify-content:flex-end;}
+.tb-datetime{font-family:'DM Mono',monospace;font-size:0.7857rem;color:var(--text2);letter-spacing:.4px}
+.tb-datetime span{color:var(--text)}
+.live-badge{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(0,212,170,.08);border:1px solid var(--em-b);
+  border-radius:4px;padding:4px 10px;
+  font-family:'DM Mono',monospace;font-size:0.7143rem;font-weight:700;
+  color:var(--em);letter-spacing:1px;
+}
+.live-dot{width:6px;height:6px;background:var(--em);border-radius:50%;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+.tb-print{
+  background:transparent;border:1px solid var(--border2);color:var(--text2);
+  padding:5px 12px;border-radius:4px;font-size:0.7143rem;font-weight:600;cursor:pointer;
+  font-family:'DM Sans',sans-serif;letter-spacing:.5px;transition:all .15s;
+}
+.tb-print:hover{background:var(--border2);color:var(--text)}
+
+/* ── TABBAR ── */
+.tabbar{
+  position:fixed;top:var(--topbar-h);left:0;right:0;z-index:390;
+  height:var(--tabbar-h);
+  background:#000000;
+  border-top:1px solid rgba(200,130,10,.25);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:stretch;padding:0 24px;gap:2px;
+  overflow-x:auto;
+}
+.tabbar::-webkit-scrollbar{display:none}
+.tab{
+  display:flex;align-items:center;gap:7px;
+  padding:0 16px;cursor:pointer;
+  font-size:0.7857rem;font-weight:600;letter-spacing:.6px;text-transform:uppercase;
+  color:var(--text3);border-bottom:2px solid transparent;
+  white-space:nowrap;transition:all .15s;user-select:none;flex-shrink:0;
+}
+.tab:hover{color:var(--text2);background:rgba(255,187,0,.06)}
+.tab.on{color:#fff;border-bottom-color:var(--tab-color,var(--gold));background:rgba(255,187,0,.08)}
+.tab .ti{font-size:0.9286rem}
+
+/* tab accent colors */
+.tab[data-t="s5"].on{--tab-color:var(--gold)}
+.tab[data-t="s7"].on{--tab-color:var(--warn)}
+.tab[data-t="s4"].on{--tab-color:var(--blue)}
+.tab[data-t="s8"].on{--tab-color:var(--danger)}
+.tab[data-t="s9"].on{--tab-color:var(--em)}
+.tab[data-t="s6"].on{--tab-color:var(--purple)}
+.tab[data-t="s11"].on{--tab-color:var(--gold2)}
+
+/* status badge on tab */
+.tab-badge{
+  font-size:0.5714rem;font-weight:700;padding:1px 5px;border-radius:3px;
+  letter-spacing:.3px;
+}
+.tbl-r{background:var(--danger-dim);color:var(--danger)}
+.tbl-g{background:var(--em-dim);color:var(--em)}
+.tbl-a{background:var(--warn-dim);color:var(--warn)}
+
+/* ── MAIN CONTENT ── */
+.main{
+  margin-top:0;
+  flex:1;
+}
+/* page header strip */
+.page-header{
+  background:linear-gradient(90deg,rgba(200,130,10,.08) 0%,transparent 60%);
+  border-bottom:1px solid var(--border);
+  padding:14px 28px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.page-title{
+  font-family:'Rajdhani',sans-serif;font-size:1.5714rem;font-weight:700;
+  color:#fff;letter-spacing:1px;text-transform:uppercase;
+}
+.page-title em{color:var(--gold2);font-style:normal}
+.page-sub{font-size:0.7857rem;color:var(--text2);margin-top:2px}
+.page-stamp{
+  font-size:0.7143rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:var(--gold2);background:var(--gold-dim);border:1px solid var(--gold-glow);
+  border-radius:4px;padding:4px 12px;font-family:'DM Mono',monospace;
+}
+
+.content{padding:22px 28px 60px}
+.sec{display:none;animation:fadeIn .18s ease}.sec.on{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── KPI CARDS ── */
+.kg{display:grid;gap:12px;margin-bottom:20px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.g5{grid-template-columns:repeat(5,1fr)}.g6{grid-template-columns:repeat(6,1fr)}
+.kc{
+  background:var(--ink3);border:1px solid var(--border);border-radius:var(--r);
+  padding:15px 18px;position:relative;overflow:hidden;
+  transition:transform .15s,box-shadow .15s;
+}
+.kc:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,.4)}
+.kc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kc.gold::before,.kc.kgold::before{background:linear-gradient(90deg,var(--gold),var(--goldf))}
+.kc.em::before,.kc.kem::before{background:var(--em)}
+.kc.danger::before,.kc.kdanger::before{background:var(--danger)}
+.kc.warn::before,.kc.kwarn::before{background:var(--warn)}
+.kc.blue::before,.kc.kblue::before{background:var(--blue)}
+.kc.gray::before,.kc.kgray::before{background:var(--text3)}
+.kl{font-size:0.6786rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;font-family:'DM Mono',monospace}
+.kv{font-size:1.5714rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;color:#fff;font-family:'DM Mono',monospace}
+.kv.gold,.kv.kgold{color:var(--gold2)}.kv.em,.kv.kem{color:var(--em)}.kv.danger,.kv.kdanger{color:var(--danger)}.kv.warn,.kv.kwarn{color:var(--warn)}.kv.blue{color:var(--blue)}
+.ks{font-size:0.7143rem;color:var(--text3);margin-top:5px}
+
+/* ── SECTION TITLE ── */
+.st{font-size:0.7143rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold2);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.st-dot{width:5px;height:5px;background:var(--gold);border-radius:50%;flex-shrink:0}
+
+/* ── TABLES ── */
+.tw{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);margin-bottom:18px}
+table{width:100%;border-collapse:collapse;font-size:0.8571rem}
+thead th{background:var(--ink4);color:var(--gold2);font-size:0.6786rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:9px 13px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace}
+tbody tr{border-bottom:1px solid rgba(255,255,255,.035);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(200,130,10,.04)}
+tbody tr.tot{background:var(--ink4);font-weight:700}
+tbody td{padding:9px 13px;color:var(--text2);white-space:nowrap;font-size:0.8571rem}
+td.b{font-weight:600;color:var(--text)}td.mn{font-family:'DM Mono',monospace;font-variant-numeric:tabular-nums}
+td.c{text-align:center}td.r{text-align:right}
+td.em{color:var(--em);font-weight:700}td.danger{color:var(--danger);font-weight:700}td.gold{color:var(--gold2);font-weight:700}td.warn{color:var(--warn);font-weight:700}
+
+/* ── BADGES ── */
+.bx{display:inline-block;font-size:0.6786rem;font-weight:700;padding:2px 7px;border-radius:3px;white-space:nowrap;font-family:'DM Mono',monospace}
+.bem{background:var(--em-dim);color:var(--em);border:1px solid var(--em-b)}
+.brd{background:var(--danger-dim);color:var(--danger);border:1px solid var(--danger-b)}
+.bwa{background:var(--warn-dim);color:var(--warn);border:1px solid rgba(255,176,32,.3)}
+.bgo{background:var(--gold-dim);color:var(--gold2);border:1px solid var(--gold-glow)}
+.bbl{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(59,158,255,.3)}
+.bgr{background:rgba(255,255,255,.05);color:var(--text2);border:1px solid var(--border)}
+
+/* ── ALERTS ── */
+.al{border-radius:var(--r);padding:13px 17px;margin-bottom:16px;border-left:4px solid}
+.al-d{background:var(--danger-dim);border-color:var(--danger)}.al-e{background:var(--em-dim);border-color:var(--em)}.al-g{background:var(--gold-dim);border-color:var(--gold)}.al-b{background:var(--blue-dim);border-color:var(--blue)}
+.al-t{font-size:0.7857rem;font-weight:700;color:#fff;margin-bottom:3px}.al-bd{font-size:0.7857rem;color:var(--text2);line-height:1.7}
+
+/* ── CHARTS ── */
+.cg{display:grid;gap:16px;margin-bottom:20px}.cg2{grid-template-columns:1fr 1fr}.cg3{grid-template-columns:1fr 1fr 1fr}
+.cb{background:var(--ink3);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px}
+.ct{font-size:0.7143rem;font-weight:700;color:var(--text2);margin-bottom:12px;letter-spacing:.4px;text-transform:uppercase}
+.ch{position:relative}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px}
+
+/* ── HIGHLIGHT / DANGER CARDS ── */
+.hl{background:linear-gradient(135deg,rgba(0,212,170,.08),rgba(0,212,170,.02));border:1px solid var(--em-b);border-radius:var(--r2);padding:18px 22px;margin-bottom:20px}
+.hl-t{font-size:0.6429rem;font-weight:700;color:var(--em);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:5px}
+.hl-v{font-size:1.4286rem;font-weight:900;color:var(--em);font-family:'DM Mono',monospace;line-height:1.2}
+.hl-s{font-size:0.7857rem;color:var(--text2);margin-top:6px}
+.dc{background:linear-gradient(135deg,rgba(255,61,90,.09),rgba(255,61,90,.02));border:1px solid var(--danger-b);border-radius:var(--r2);padding:18px 22px;margin-bottom:20px}
+.dc-t{font-size:0.6429rem;font-weight:700;color:var(--danger);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:5px}
+.dc-v{font-size:1.4286rem;font-weight:900;color:var(--danger);font-family:'DM Mono',monospace;line-height:1.2}
+.dc-s{font-size:0.7857rem;color:var(--text2);margin-top:6px}
+
+/* ── RANK ITEMS ── */
+.rk{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--ink3);border:1px solid var(--border);border-radius:var(--r);margin-bottom:7px}
+.rk-pos{font-size:1.0714rem;font-weight:900;color:var(--text3);width:24px;flex-shrink:0;text-align:center;font-family:'DM Mono',monospace}
+.rk-info{flex:1;min-width:0}.rk-name{font-size:0.8571rem;font-weight:700;color:var(--text)}.rk-sub{font-size:0.7143rem;color:var(--text3);margin-top:1px}
+.rk-val{font-size:0.8571rem;font-weight:800;flex-shrink:0;font-family:'DM Mono',monospace}
+
+/* ── DIAG GRID ── */
+.dg{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:20px}
+.dcard{background:var(--ink3);border:1px solid var(--border);border-radius:var(--r);padding:15px;border-top:3px solid}
+.dcard-d{border-top-color:var(--danger)}.dcard-e{border-top-color:var(--em)}.dcard-g{border-top-color:var(--gold)}.dcard-w{border-top-color:var(--warn)}
+
+/* ── CHIPS ── */
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px}
+.chip{background:var(--ink4);border:1px solid var(--border);border-radius:4px;padding:3px 9px;font-size:0.7143rem;color:var(--text2);font-family:'DM Mono',monospace}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){.g6{grid-template-columns:repeat(3,1fr)}.cg2,.two,.dg{grid-template-columns:1fr}}
+@media(max-width:768px){.tabbar{padding:0 8px}.tab{padding:0 10px;font-size:0.7143rem}}
+@media print{.topbar,.tabbar{display:none}.main{margin-top:0}.sec{display:block!important;page-break-after:always}}
+
+/* ── SCROLL ROOT (iOS Safari fix) ── */
+#scroll-root{
+  position:fixed;
+  top:calc(var(--topbar-h) + var(--tabbar-h));
+  left:0;right:0;
+  bottom:4.1429rem;
+  overflow-y:scroll;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+}
+#scroll-root-inner{
+  min-height:100%;
+  padding-bottom:20px;
+}
+
+/* ── SELETOR DE TELA ── */
+.scr-sec{
+  padding:8px 16px 4px;
+  font-family:'DM Sans',sans-serif;
+  font-size:0.7143rem;font-weight:800;letter-spacing:2px;
+  color:#555;background:#0d0d0d;
+  border-top:1px solid #1a1a1a;
+}
+.scr-item{
+  padding:10px 16px;
+  font-size:0.9286rem;font-weight:600;
+  color:#888;cursor:pointer;
+  display:flex;align-items:center;
+  transition:background .1s,color .1s;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  border-left:3px solid transparent;
+}
+.scr-item:hover,.scr-item:active{
+  background:rgba(200,130,10,.08);
+  color:#fff;
+  border-left-color:var(--gold);
+}
+.scr-item.on{
+  background:rgba(200,130,10,.12);
+  color:var(--goldf);font-weight:800;
+  border-left-color:var(--gold);
+}
+.scr-item.on::after{content:'✓';margin-left:auto;color:var(--goldf);font-size:1.1429rem}
+.scr-px{
+  margin-left:auto;
+  font-family:'DM Mono',monospace;
+  font-size:0.7143rem;color:#444;
+}
+.scr-item.on .scr-px{color:var(--goldf);opacity:.7}
+
+@-webkit-keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+</style>
+</head>
+<body>
+
+<!-- ══ BOTÃO AJUSTE DE TELA ══ -->
+<div id="scr-wrap" style="position:fixed;top:12px;right:80px;z-index:99999">
+  <button id="scr-btn" onclick="scrToggle(event)" style="
+    background:rgba(7,9,15,.95);
+    border:2px solid #FFBB00;
+    color:var(--goldf);
+    width:44px;height:36px;
+    border-radius:6px;
+    cursor:pointer;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:1px;
+    box-shadow:0 2px 12px rgba(200,130,10,.25);
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+    font-family:'DM Sans',sans-serif;
+  ">
+    <span style="font-size:1.0rem;line-height:1">🖥</span>
+    <span style="font-size:0.5rem;font-weight:900;letter-spacing:1px">TELA</span>
+  </button>
+  <div id="scr-menu" style="
+    display:none;
+    position:fixed;
+    top:56px;
+    right:12px;
+    background:#0A0F1C;
+    border:1px solid var(--gold);
+    border-radius:8px;
+    width:260px;
+    max-height:82vh;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    box-shadow:0 8px 40px rgba(0,0,0,.9),0 0 0 1px rgba(200,130,10,.1);
+    z-index:99999;
+    font-family:'DM Sans',sans-serif;
+  ">
+    <div style="padding:12px 16px 8px;border-bottom:1px solid #1a2540;background:#0D1525;border-radius:8px 8px 0 0">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:1.0rem;font-weight:700;letter-spacing:2px;color:var(--goldf)">AJUSTE DE TELA</div>
+      <div style="font-size:0.7143rem;color:var(--text3);margin-top:2px">Selecione o dispositivo</div>
+    </div>
+    <div class="scr-sec">📱 CELULAR / SMARTPHONE</div>
+    <div class="scr-item on" data-sc="sm"    onclick="setScreen('sm')"   >Android & iPhone (padrão) <span class="scr-px">10px</span></div>
+    <div class="scr-item"    data-sc="sm-lg" onclick="setScreen('sm-lg')">Smartphone tela grande     <span class="scr-px">11px</span></div>
+    <div class="scr-sec">📟 TABLET</div>
+    <div class="scr-item" data-sc="tab"    onclick="setScreen('tab')"   >iPad / Tablet 10"  <span class="scr-px">12px</span></div>
+    <div class="scr-item" data-sc="tab-lg" onclick="setScreen('tab-lg')">Tablet 12–13"      <span class="scr-px">13px</span></div>
+    <div class="scr-sec">💻 COMPUTADOR</div>
+    <div class="scr-item" data-sc="nb"   onclick="setScreen('nb')"  >Notebook 13–15"   <span class="scr-px">14px</span></div>
+    <div class="scr-item" data-sc="pc"   onclick="setScreen('pc')"  >Monitor PC 24"    <span class="scr-px">15px</span></div>
+    <div class="scr-item" data-sc="pc-l" onclick="setScreen('pc-l')">Monitor PC 27–32" <span class="scr-px">16px</span></div>
+    <div class="scr-sec">📺 TELEVISÃO / SMART TV</div>
+    <div class="scr-item" data-sc="t30" onclick="setScreen('t30')">TV 30"  <span class="scr-px">16px</span></div>
+    <div class="scr-item" data-sc="t32" onclick="setScreen('t32')">TV 32"  <span class="scr-px">17px</span></div>
+    <div class="scr-item" data-sc="t40" onclick="setScreen('t40')">TV 40"  <span class="scr-px">18px</span></div>
+    <div class="scr-item" data-sc="t43" onclick="setScreen('t43')">TV 43"  <span class="scr-px">20px</span></div>
+    <div class="scr-item" data-sc="t45" onclick="setScreen('t45')">TV 45"  <span class="scr-px">21px</span></div>
+    <div class="scr-item" data-sc="t50" onclick="setScreen('t50')">TV 50"  <span class="scr-px">22px</span></div>
+    <div class="scr-item" data-sc="t55" onclick="setScreen('t55')">TV 55"  <span class="scr-px">23px</span></div>
+    <div class="scr-item" data-sc="t60" onclick="setScreen('t60')">TV 60"  <span class="scr-px">25px</span></div>
+    <div class="scr-item" data-sc="t65" onclick="setScreen('t65')">TV 65"  <span class="scr-px">27px</span></div>
+    <div style="padding:8px 16px;border-top:1px solid #1a2540;font-size:0.6429rem;color:var(--text3);font-family:'DM Mono',monospace;background:#0A0D18;border-radius:0 0 8px 8px">
+      Preferência salva automaticamente
+    </div>
+  </div>
+</div>
+<!-- ════════════════════════════════════════ -->
+
+<!-- ══ TOPBAR ══ -->
+<header class="topbar">
+  <div class="logo-wrap">
+    <div class="logo-texts">
+      <div class="logo-name">Otto Transportes</div>
+      <div class="logo-sub">Sistema de Gestão de Frota — Março 2026 v9</div>
+    </div>
+  </div>
+  <div class="topbar-spacer"></div>
+  <img class="logo-img" src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCABZAUkDASIAAhEBAxEB/8QAHQAAAQQDAQEAAAAAAAAAAAAAAAIGBwgBBQkEA//EAEoQAAEDAwIDAwULCAkEAwAAAAEAAgMEBREGBxIhMQhBURMiYXHRCRQWGDI3VIGRobEVIzZCUnSUsjQ1VWJyc5KTwhckM1NEVsH/xAAbAQEAAwEAAwAAAAAAAAAAAAAAAQIDBAUGB//EACcRAAICAQMCBwEBAQAAAAAAAAABAgMRBBIhMUEFBhMUIjJRYZGx/9oADAMBAAIRAxEAPwCmgKV1aSEkdV96dnE/haC5x5Bo71biEdwjHczMLTMQwNcXHk1rRzKk3Se1wjtwvms65lmt2A4Nk5PkHgMZW20lYrZt9ptmqdSwsluUwzR0burfAuCjrWOrLvqivfV3Goe4Z8yJpwxo8MLhlbZe2oPC/TrUYQWZD9qtwdK6aYYNH6cpy5vIVdU0Oc/0ghN+5buazqiWtuT6Vh6NgPCAmE4k8yBz7vBIw4nABUx0NKeZrd/TJ6iUuEO5u4etGOEh1HXuHc3yi3Ns3j1fBhtTUMrox+pUAuUd+TkA5sd9iQQ45GOS0npqJ8KIVlq4Jlg1Ft9rHEGobRHZKl/SspwGs4vT1PVNnXu29xsMH5ToXC52d/nNqoOYwemUwRIQfT4p77dbgXLTNU2mmcay1ynhnp5fOBCyVDpfwfH4aeomsMY72YGR0zzz3KdOyDt9YdwtY1luvkTpKeGnLwBj0e1MXdWl0yblBc9N1THxVbeKSnB5xuPVTT7nm0N3EuhGSRSO5Dwy1dNdm5GEltJ7PZd2v4XEUEno6exIHZY2xIz7zl5+r2KdDzw7BHoQXD9o58Fdme7JBnxV9sfocv3exHxV9sfocv3exTrjnjiOUcJ/aKEkEnssbYfRJR9nsWPisbYfRZvu9incjA5klYDxw5OQgIL+Ktth9FqPtHsR8Vba/wCiVB+sexTvyRhAQR8Vja76FP8Aa32I+KvteelJUD6x7FO3P0IyM4OMoCCfirbYfRaj7R7En4rG2H0Wb7vYp45Ix6UBA/xWNsPos33exHxWNsPos33exTxhI4x5vJ3P7kBBY7LO1460kx+z2Jn7ydnbQGnNurpeLdRvbU08ZcwnHgVaR5xzyQAo97RZP/R+/EhvD73OPsKA5Xv+W71rA6pT2HORzyU9dntub3uLqmG02qMBmQZpnA8MbfSUA3LDZ7rfq2O3Wiinq6mR2GRxjOSrM7W9kG93Snir9XVot0bsO97AESY9fMKzeyu0WmturOyKhpI5a9wHlqh7QST6FJQbwcsgM8FUEPaV7OG19lhZG6yxV0jRzfUtDnJ6Ue2ehaOMMg0tb8NGB+aCdoBDstbySgOHn4+KAaFdtpoSqhc2fS1vIIwfzQTG1h2bdsr5TOZHZmW+V45SUzQ0gqachxWHeDgCO5AUL3X7J2orBSyV2lqj8rQsBd73wTIB9eAq23SguFtqJKWugkgnicWvjeMFpXYOVodw8QBb3gqG9/tjdO7iWmpqaSmjpL1G0mOZjccR8CgOaKAt7rfSt30hqCos15p3Q1ELiMkcnDxHoWjwRgkKwFOPG/PTK33wluf/ALlofML+eQPQlZi8XoBLFJmxmn6Spu82orxGDa7W3ysnF0cR3feo14fPwzxwpfvx+DOx1BRUxMNRd3CaoyebmkfcOS5tXNuKiu/BtUsptdhk7k6rqtUajmrJ3kwtJZEwHk1o6JsZcXY5jxSM9c9SnPtvp2XU+qKe2Elsbvzkrv7jevP1Lf46esrFeq8M2Og9vblqcmrke2itMXOaplPDgejKeMlz2q0gBBTWx2oKtgw+SUFrc+gtK0272ry2T4J2CT3vaqECMiPkXuHIkkdeii/iJzk9eq44Vy1WJSeE+yNG4VvEepMDd1rBLIRJoa3GDOA3yjhgetLkj2r1TRzOpvKWK4uHJpGY8+slQ3xHAGUF5J5larSRg/gyr1E5cH1rYmQ1csLJBI1jy1rx+sAeq+YyMc0HoOXVKiGXAcJJ6etdceVhmb5ZhzgMtAye45Vnfc/aulotwLo6rqooQ6jcA57gOeWqt9fa66jjikq6SWBkgywubjiCRTV1db5S+hrZ6dxGOKF5YSPqVYbZZ2vJEm08M66/lyzAZN0pf9wJIv8AY+PzrnSAgf8AsC5MHU+onHLr7cv4l/tSqfU2oX1MTTe7iRxD/wCQ7x9aZDikso67wTRTtEkT2va4Za5pyCF9Ey9knvk2r07LI9z5HUEfE5xyTyTzyoyQDjhpK1015tUEroKivpoph1Y6QAhe94DmkHphc2O1pfLzR773yGlutbBG3yfC2OdzQPN8AVIOi35fsg63Sl/3Aj4QWT+1KX/cC5JHU2os/wBeXH+Jf7UfCbUX9uXH+Jf7UB1t+EFk/tSl/wBwLBv1mOOG6Un+4FyT+E2ov7cuP8S/2oGptRE/15cv4l/tQHXikqYqpvlaaWOWA/Jex2QV6VCnYvqKit2HtU9XUTTymWXL5HlxPneJU1ZUN4BleOuuVvoniOrrYKdzhloe8AkL1knCpF7oNc7lQa1s4orhVUwNLzEUrmg+cfBEwXIF+szwSbnSY7h5UJgdoa8Wio2hvcbLhTucYSA1sgJPIrmmdT6iJ/r25fxL/avnUagvtRC6GovFfLG7q187iD9WVIFWG01N6vtNa6GN0k1RKGNa0Z6nqumnZ+2xtm3WjqOijgYbjJEHVU/Dzc7wyql9gvRzL3uLU32rp/KRWyJr4y7pxEkH1roAxuAOE48UAFuOiTl2eQBPcCvovFfLjSWm11FxrpWw09Owve89wAyq5B9qmUU8RlcWNaPlFxwAmtddytC2t5ZXamt0DwcOa6duQftVJe0X2ir7qu71Fq03WvobTC4x8UZw6X0ghV7ra2sq5C6qqpp3E5LpHlxP2qcA6z2bX2j7yA22ait1Q5xw0NnbkpxAsPC4ecHd46Lj1b7rcqCRr6KuqadzTkGOQtx9itV2Xu0bd6a8U2lNZVIqaSdzY6epcMGM9wce/wBaYBd8nzsY9SQQ4sJADHZRBIyaBkrDlj2hzT4gpZHLCgEC9rbaOi1vo2a8UVO0XqiYXxlo5y+g/aSuddXFLDNJBMwsdG8tII6ELsRPHHOx8DgHBzcHPgVzN7WGj26Q3euUETQylrCaiBo7h0/HKkEQoQhSD2WxnlK+njP68rQftClTtFv97zaetkfKOC3N5Dx4iopo3+TroJP2ZGu+8KWO0GPftNpq9R82T29rSfTklcuox7iH4dFH1kRE/mGnxCl/YgNpdJ6pvZbmamgMUTu9pcw+xQ90IUw9n6ZlbZ9S6aPKatpnSsHiWMPtWfiO70Hjrlf9K6f7IiasldPK6V5y9zi5x8SV5+5eq400lLVywyjDonlhB8QvL3Lug47Vj8K2fdg7qgBKAyvrTRSS1DI4mcb3HHCpSwtxksvhGIo5aiVkUMZe8kBrQM5Vh9jNlffEtPqHU8J8g3zmU5/W8MhbnYPaW30AhvWoDFUVkgDoKcEEt9P4KwXmRngeWRsAwBxDlhfP/NvmTUQi6NLHrxlHsHh3h1bxOxjO3F28smrdNGgdTQ08zGYp5GswWeAVLdfaQumkby+3XGBzcE8D8cnDxXQB9TCS1okYD+1xBNPc7R1i1lYZILk6np34xDUv6g+grwPlnzHqtHYqdRFtM6vENHTJZgUIAyEqk/pkX+MfinFrrTFbpO9zW2rHEMkxvByHDxTdpP6ZF/jH4r63GyFkVKJ6vKO2WDq5sd802nP3CL8E9Ey9jvmm05+4RfgnohBg/wD4uY/a/wDn8v3rj/lXTg9fqXMftffP7fvXH/KrIEQlCChACy3qsLLeqA6UdiL5gbT/AJsv8ym4qEexF8wNp/zZf5lNxVZAw7oqMe6KfptZv3X/AJFXnd0VGPdFP02s37r/AMiiBVAoQUKwL6e540MUe3FdcQ0eVlqnxudjuBGPxVoMOGMePNVj9zyrWSbZ1lAHDiiq5JCPWR7FZxoIcQPkqGBar3259S1ti2qNPRvLffkrYpMHq0nBCsIq7dvCw1d02pZWUzXOFJUMc/hHQZySqoHPbGQQPsPcvmeq+7hh5yQC7mHFfA9VcA04IK+8UskMjZIZXMcPOGORafFedfZodI/h/wDI7PL0oDqH2Y9SVOqNoLRX1by+ZjTCXHqQzDR+Ck5RX2WdO1GmtnbTR1OTLIDNz8H+cPxUqKAIY1gc7h+UeZVHfdFLZHHq2zXEfKdSln1cSvF3OdjB6Kknui9dCdR2OgaRxilL8Dw4kBUZCEKQfQE5BHcVMkwGq9jIpKZpfU2STEzT1LA3u+sqGm8uSkLZTVMFi1C6hubgbVcG+RqWnoAe/wDBc+qg3FSj2N6pYTS7jALPOI9K3mir/VaZ1BS3Wl5Phdh4/aYTzC2+6WkJtNXyV7AX26o8+klZzDgeeEzWgg5BwR4raCjqIcspl1PJLe52k4NSUg1rpQtmhnaHVdM35cb+849ZUSPhkje5kjS1zeRB7k4tHaxu+lq3y9umJid/5IX82v8AqKf41XtnqsNk1JZJbXWEedLSNLw4+JGQuKErNNiON0V3NFsseV1IcaHcJPReu2w1c1UxtFHJJPnzQwZKlb4O7RxO9+S6lrnwdRCKUZ/mWJtwNHaYhc3RNiDqkdKuoB4gf8JyFf3rlxXBvJZVKvls3GnDLtppefUF8rJH3qrj4aakfIeJgcCMkfYosrda6lqaqWoN1qA57i7DXnAyvBqHUF1v9ydX3Wd1RI48uLo31Bas/KIBB588KKfDqsuyeG2VlqZN4gxyUeqNT1EsdOLrUuL3BoaHHKkneq+1dp0ZpzS8lZO+qdAKiqcHEEODiMfZhaPZrTMcQl1hfGiO00GXxl/IyP8AD7wmVr2/VGo9TVdzndykeeBueTW+AWHtKbb01Bcfw0VtijyzUVNXNMQ6eR8zh3vcSQF8qTnWRH++PxXzPMpdJ/S4v8Y/FeVlhcI5G8s6u7HfNNpz9wi/BPRMvY75ptOfuEX4J6KhBg9fqXMftffP7fvXH/KunB6/UuY/a++f2/euP+VWQIhKEFCAFlvVYWW9UB0o7EXzA2n/ADZf5lNxUI9iL5gbT/my/wAym4qGgYd0VGPdFP02s37r/wAirzu6KjHuin6bWb91/wCRUAqgUIKFYFn+wLrBtm11Wafq5uGO4RNELc8uLJJV9QHDvGCVyE0neK+xago7vQSOinpZGvDh4DquoGyO4Vs3C0VRXSjqGOqQwCpiz5zX458kYH8tfqK0UV9s1TarhE2WnqIyx4I8RhbBIc5ocGnPPvVcA5wdoXYTUehtQ1Fba6Cavs0zi+J8LS7yY8HeCg6SGRji17SHA4II5rsRVU0FVC+CpiZNGRgskbkFMK87J7dXeZ1RV6epxI45cGDhGfqU5By2pqWoqJmRQQvkkecNa1uSSrN9mDs9XW/3ml1JqiifR22ncHxwyNw6Q+rwVtrBtBt/YJmVFBp6mErTlpeOLB+tPhkUULWRwsEbAOQaMAJkBb4IqWjipoGBkcTQxrR3ADAXoWAB18VlAfOZ7Gxlz+TRzJ8FzU7X+q49U7v1ohe6SCgaYI3DoR15K4/ai3TpNA6JqoIahhulUwxwxg8x6fxXNq41U9ZWS1VRIXyyuLnE+kqcA8qEIQCilMIBBIzjwSO9Kb4d3ep6raE9rJf0Dq+13vT7dF6xAMDvNpa1xyYSenPqmtrzb+8aYqePybquiPnR1MQ4mFvdkpmtcOIYcQ0HkCU/dE7n3eyU/wCTa9jLpancnwTji5ejK451WVPdD/DqU4NYkMEuw4gnqhxOABkFTJLbdrNZtMlvr3WC4SdIZQSzPowOS11Rstej59vutvrWn5JbIBkfWU99UuLPj/CntpdYkVkuPLvSg7I68gpJ/wCjGrgRiOnDu8mdmPxXtpdmqiACW9agt1DAD5/nBx+4qZ6/TLo8EehZPqRUQ57g3mc9AO9SRoDbl9dCL5qOQWqz0/nyOlGHSDuAHXmt6yt2v0QOOhjOobi35JePzTXeOCEw9ca7vWqqrFbL5Klbyjpo+TGj1KvqWaj6Rwv0vGMKuvU3G6GumXiKOx2SL3rY6XzWRt5eUI5ZPio6cefrWQQQeLOO7BWHczz6rpqrVSMrLdwkHmvtSDNZDgfrt/FfDvXoo3sZPE9zg0NeM8u7Ku/0zOrOx2W7VadBcHD3hF07uSemR6VXbazf/bCzbf2a21t9bFU09KyORvA7kQPUnN8ZPab/AOxD/Q72KoJic4AEgHIC5kdroh+/d9djAJj5Z/uq6vxk9py7hGom8x3xu9iot2kNRWvVm714vlkmbPRVHBwPxjo3BVkCNndSsIPVCAEpjSeYx1SUqPOScA+tAdJuxKeHYS1RkgkSSkkf4lN2R4FVK7LG8232kNnrbZb7em0tbDJIXt4CeRdkKVT2ktpgf0ib/od7FDBMBIx0Kov7oiR8N7KeLi/7TJ/1FWGd2ktpiMfCRrfT5N3sVVO2hrnS+utVWyq0zcmVkUVPwPdwkc8k96gFeHY7gkpT/lcklWAoOcM4cRnkn/sjujfNs9Uw3G3yuko3OAqaYnzXt78eB9Kj5ZZniGEB1c2p3O03uFYYrlaayPypaPKQF3ntd6k925LfO5nquRujtXXzSV2bX2KvnpHsOeFryA71+KtbtV2voBBFR60oX+UaADUQkBvrI6qoLjcLs56jwWA1vFxZdnwyo80fvRt3qeHit2oqfOObZPNI+1O2LVGn3Rtc280RBHL8+32oDcEt70l49OPBaifVOno4nPfeaANAySZ2+1MXWW++2+mDisv0Uso6Miyc/YgJQ5tPM5z6FGO+G82ndtrTI6aojqbk5p8lTMdl2fSq5btdrqur2TUGjaQ0wOQKiTny8Qqvahvdzv8AdZLld6+ernlyXPkeSc+CsgbbdDXd619qmpvV3mLjI8mOLPmxjwATULiW8Jx1ysHqsIAQhCAEIQgBLykIQC8kdM5XpprlW05/M1UsePBy8jeq+jVGExk2D9QXlzeE3KoI8OJeKesqpzmaeR59Lkkr5nqm1DJjJ8VhCFIBCEIAQhCAEIQgBCEIAQhCAEIQgBKSUoIAKSlFJQAhCEAIQhACEIQCmve35L3N9RXpiuFawANq5gB/eK8iyegQHpmr6yQEOqpnA9QXFeZznO+U4n1lA6FYQAhCEAIQhACEIQH/2Q==" alt="Otto Transportes" style="position:absolute;left:50%;transform:translateX(-50%);z-index:5;pointer-events:none;">
+  <div class="topbar-right">
+    <div class="tb-datetime" id="clock">
+      <span id="dt-date"></span> <span id="dt-time"></span>
+    </div>
+    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    <button class="tb-print" onclick="window.print()">🖨 PDF</button>
+  </div>
+</header>
+
+<!-- ══ TABBAR ══ -->
+<nav class="tabbar">
+  <div class="tab on" data-t="s5" onclick="go('s5',this)">
+    <span class="ti">💰</span> CFO Financeiro
+  </div>
+  <div class="tab" data-t="s7" onclick="go('s7',this)">
+    <span class="ti">⛽</span> Combustível
+
+  </div>
+  <div class="tab" data-t="s4" onclick="go('s4',this)">
+    <span class="ti">📊</span> Dash Executivo
+    <span class="tab-badge tbl-r">⚠</span>
+  </div>
+  <div class="tab" data-t="s8" onclick="go('s8',this)">
+    <span class="ti">🔧</span> Manutenção
+  </div>
+  <div class="tab" data-t="s9" onclick="go('s9',this)">
+    <span class="ti">📡</span> Disponibilidade
+    <span class="tab-badge tbl-r">48,9%</span>
+  </div>
+  <div class="tab" data-t="s6" onclick="go('s6',this)">
+    <span class="ti">🏆</span> Faturamento/Placa
+  </div>
+  <div class="tab" data-t="s11" onclick="go('s11',this)">
+    <span class="ti">🎯</span> Diagnóstico
+  </div>
+  <div class="tab" data-t="s1" onclick="go('s1',this)">
+    <span class="ti">🔍</span> Auditoria
+    <span class="tab-badge tbl-g">OK</span>
+  </div>
+  <div class="tab" data-t="s2" onclick="go('s2',this)">
+    <span class="ti">🗄</span> Base RAW
+  </div>
+  <div class="tab" data-t="s3" onclick="go('s3',this)">
+    <span class="ti">🧠</span> BASE_DADOS
+  </div>
+  <div class="tab" data-t="s10" onclick="go('s10',this)">
+    <span class="ti">💼</span> Custos
+  </div>
+</nav>
+
+<!-- ══ MAIN ══ -->
+<div id="scroll-root"><div id="scroll-root-inner"><div class="main">
+
+<!-- page header dinâmico -->
+<div class="page-header" id="pageHeader">
+  <div>
+    <div class="page-title" id="pageTitle">Dashboard <em>CFO</em> — Financeiro</div>
+    <div class="page-sub" id="pageSub">Resultado financeiro detalhado · Estrutura de custos · Análise por plano de conta</div>
+  </div>
+  <div class="page-stamp">MARÇO / 2026</div>
+</div>
+
+<div class="content">
+
+<!-- S5: FINANCEIRO (aba padrão) -->
+<section class="sec on" id="s5">
+  <div class="kg g4">
+    <div class="kc em"><div class="kl">Receita Total</div><div class="kv em">R$2.355.024</div><div class="ks">período Março/2026</div></div>
+    <div class="kc danger"><div class="kl">Custo Total</div><div class="kv danger">R$2.468.560</div><div class="ks">todos lançamentos</div></div>
+    <div class="kc warn"><div class="kl">Resultado</div><div class="kv warn">-R$113.537</div><div class="ks">PREJUÍZO</div></div>
+    <div class="kc warn"><div class="kl">Margem</div><div class="kv warn">-4,8%</div><div class="ks">meta: positivo</div></div>
+  </div>
+  <div class="hl"><div class="hl-t">✅ DESTAQUE — ÚNICA FROTA LUCRATIVA (ISOESTE)</div><div class="hl-v">Receita R$180.000 · Custo R$75.387 · LUCRO R$104.613 · Margem 58,1%</div><div class="hl-s">Modelo de contrato diferenciado: 4 tocos parados com receita garantida. Replicar para outros veículos.</div></div>
+  <div class="cg cg2">
+    <div class="cb"><div class="ct">Composição do Custo Total — Por Plano de Conta</div><div class="ch" style="height:260px"><canvas id="c_custocomp"></canvas></div></div>
+    <div class="cb"><div class="ct">Resultado por Tipo de Frota — Receita × Custo</div><div class="ch" style="height:260px"><canvas id="c_frotafin"></canvas></div></div>
+  </div>
+  <div class="st"><span class="st-dot"></span>Estrutura Detalhada de Custos — Dados Reais</div>
+  <div class="tw"><table>
+    <thead><tr><th>Plano de Conta</th><th>Custo Total (R$)</th><th>% Custo</th><th>Tipo</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="b">🏗 Aquisição de Veículo</td><td class="mn danger">1.126.085,62</td><td class="danger">45,6%</td><td><span class="bx brd">FIXO</span></td><td><span class="bx brd">🔴 DOMINANTE</span></td></tr>
+      <tr><td class="b">⛽ Combustível</td><td class="mn">781.408,56</td><td>31,7%</td><td><span class="bx bwa">VARIÁVEL</span></td><td><span class="bx brd">🔴 ALTO</span></td></tr>
+      <tr><td class="b">💵 Comissão Motoristas</td><td class="mn">256.350,74</td><td>10,4%</td><td><span class="bx bwa">VARIÁVEL</span></td><td><span class="bx bwa">🟡 MÉDIO</span></td></tr>
+      <tr><td class="b">🔩 Peça / Acessório</td><td class="mn">106.254,34</td><td>4,3%</td><td><span class="bx bwa">VARIÁVEL</span></td><td><span class="bx bwa">🟡 MÉDIO</span></td></tr>
+      <tr><td class="b">🔧 Mão-de-Obra Mec./Elét.</td><td class="mn">91.900,94</td><td>3,7%</td><td><span class="bx bwa">VARIÁVEL</span></td><td><span class="bx bwa">🟡 MÉDIO</span></td></tr>
+      <tr><td class="b">🛡 Seguro Veículo</td><td class="mn">28.796,82</td><td>1,2%</td><td><span class="bx brd">FIXO</span></td><td><span class="bx bem">🟢 BAIXO</span></td></tr>
+      <tr><td class="b">📋 Despachante</td><td class="mn">21.800,18</td><td>0,9%</td><td><span class="bx brd">FIXO</span></td><td><span class="bx bem">🟢 BAIXO</span></td></tr>
+      <tr><td class="b">📤 Rescisão</td><td class="mn">20.778,11</td><td>0,8%</td><td><span class="bx bwa">VARIÁVEL</span></td><td><span class="bx bem">🟢 BAIXO</span></td></tr>
+      <tr><td class="b">🧪 Arla</td><td class="mn">22.047,96</td><td>0,9%</td><td><span class="bx bwa">VARIÁVEL</span></td><td><span class="bx bem">🟢 BAIXO</span></td></tr>
+      <tr><td class="b">🏨 Diária</td><td class="mn">13.050,00</td><td>0,5%</td><td><span class="bx bwa">VARIÁVEL</span></td><td><span class="bx bem">🟢 BAIXO</span></td></tr>
+      <tr><td class="b">📍 Aquisição Rastreador</td><td class="mn">11.363,50</td><td>0,5%</td><td><span class="bx brd">FIXO</span></td><td><span class="bx bem">🟢 BAIXO</span></td></tr>
+      <tr><td class="b">🚿 Lavajato</td><td class="mn">6.810,00</td><td>0,3%</td><td><span class="bx bwa">VARIÁVEL</span></td><td><span class="bx bem">🟢 BAIXO</span></td></tr>
+      <tr><td class="b">🏠 Manut. Interna</td><td class="mn">9.926,16</td><td>0,4%</td><td><span class="bx bem">CONTROLADO</span></td><td><span class="bx bem">✅ OK</span></td></tr>
+      <tr class="tot"><td class="b">📊 TOTAL CUSTOS</td><td class="mn danger">2.468.560,37</td><td class="danger">100%</td><td>—</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+  <div class="st"><span class="st-dot"></span>Resultado por Tipo de Frota</div>
+  <div class="tw"><table>
+    <thead><tr><th>Tipo Frota</th><th>Veículos</th><th>Receita</th><th>Custo</th><th>Resultado</th><th>Margem</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="b">🚛 6-12% Rodotrem</td><td class="mn c">41</td><td class="mn em">R$2.073.055</td><td class="mn">R$1.958.157</td><td class="em">+R$114.898</td><td class="em">+5,5%</td><td><span class="bx bem">✅ LUCRO</span></td></tr>
+      <tr><td class="b">🚛 7-13% LS</td><td class="mn c">2</td><td class="mn">R$72.969</td><td class="mn danger">R$89.706</td><td class="danger">-R$16.737</td><td class="danger">-22,9%</td><td><span class="bx brd">🔴 PREJUÍZO</span></td></tr>
+      <tr><td class="b">🚛 8-15% LS Antigo</td><td class="mn c">2</td><td class="mn">R$29.000</td><td class="mn danger">R$34.066</td><td class="danger">-R$5.066</td><td class="danger">-17,5%</td><td><span class="bx brd">🔴 PREJUÍZO</span></td></tr>
+      <tr style="background:rgba(0,212,170,.04)"><td class="b em">✅ 9-FROTA ISOESTE</td><td class="mn c">4</td><td class="mn em">R$180.000</td><td class="mn">R$75.387</td><td class="em">+R$104.613</td><td class="em">+58,1%</td><td><span class="bx bem">✅ ÚNICO LUCRO</span></td></tr>
+      <tr><td class="b">🚃 2-Próprio Carreta</td><td class="mn c">50</td><td class="mn">R$0</td><td class="mn danger">R$265.470</td><td class="danger">-R$265.470</td><td>—</td><td><span class="bx bgr">CENTRO CUSTO</span></td></tr>
+      <tr class="tot"><td class="b">📊 TOTAL GERAL</td><td class="mn c">109</td><td class="mn em">R$2.355.024</td><td class="mn danger">R$2.468.560</td><td class="danger">-R$113.537</td><td class="warn">-4,8%</td><td><span class="bx bwa">⚠ PREJUÍZO</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- S7: COMBUSTÍVEL -->
+<section class="sec" id="s7">
+  <div class="kg g5">
+    <div class="kc warn"><div class="kl">Total Litros</div><div class="kv warn">120.694 L</div><div class="ks">meta: 60.000 L (+101%)</div></div>
+    <div class="kc danger"><div class="kl">Custo Combustível</div><div class="kv danger">R$781.409</div><div class="ks">31,7% do custo total</div></div>
+    <div class="kc warn"><div class="kl">Preço Médio/L</div><div class="kv warn">R$6,47</div><div class="ks">meta: R$5,50–R$6,50</div></div>
+    <div class="kc gold"><div class="kl">Arla</div><div class="kv gold">R$22.048</div><div class="ks">0,9% custo total</div></div>
+    <div class="kc gray"><div class="kl">Postos Analisados</div><div class="kv">41</div><div class="ks">fornecedores distintos</div></div>
+  </div>
+  <div class="cg cg2">
+    <div class="cb"><div class="ct">Top 10 Veículos — Maior Consumo Diesel (R$)</div><div class="ch" style="height:270px"><canvas id="c_comb_veic"></canvas></div></div>
+    <div class="cb"><div class="ct">Top 10 Postos — Maior Volume (R$)</div><div class="ch" style="height:270px"><canvas id="c_postos"></canvas></div></div>
+  </div>
+  <div class="two">
+    <div>
+      <div class="st"><span class="st-dot"></span>Top 10 Veículos por Consumo</div>
+      <div class="tw"><table>
+        <thead><tr><th>#</th><th>Placa</th><th>Custo (R$)</th><th>Litros</th><th>Preço/L</th><th>KM/L</th></tr></thead>
+        <tbody>
+          <tr><td class="b c">1</td><td class="b">TGN3H72</td><td class="mn danger">R$38.063</td><td class="mn">5.849 L</td><td class="mn warn">R$6,51</td><td class="mn danger">—</td></tr>
+          <tr><td class="b c">2</td><td class="b">TFY2E81</td><td class="mn">R$30.094</td><td class="mn">4.531 L</td><td class="mn warn">R$6,64</td><td class="mn danger">—</td></tr>
+          <tr><td class="b c">3</td><td class="b">RBT1J48</td><td class="mn">R$28.583</td><td class="mn">4.347 L</td><td class="mn">R$6,58</td><td class="mn danger">—</td></tr>
+          <tr><td class="b c">4</td><td class="b">SDE2A56</td><td class="mn">R$28.219</td><td class="mn">4.108 L</td><td class="mn danger">R$6,87</td><td class="mn danger">—</td></tr>
+          <tr><td class="b c">5</td><td class="b">RBS9J98</td><td class="mn">R$25.873</td><td class="mn">3.960 L</td><td class="mn">R$6,53</td><td class="mn danger">—</td></tr>
+          <tr><td class="b c">6</td><td class="b">SDO5C30</td><td class="mn">R$25.585</td><td class="mn">4.064 L</td><td class="mn">R$6,30</td><td class="mn danger">—</td></tr>
+          <tr><td class="b c">7</td><td class="b">SDO5I30</td><td class="mn">R$25.468</td><td class="mn">3.958 L</td><td class="mn">R$6,43</td><td class="mn danger">—</td></tr>
+          <tr><td class="b c">8</td><td class="b">SDD9J07</td><td class="mn">R$25.157</td><td class="mn">3.958 L</td><td class="mn">R$6,36</td><td class="mn danger">—</td></tr>
+          <tr><td class="b c">9</td><td class="b">FRA8F45</td><td class="mn">R$24.756</td><td class="mn">3.915 L</td><td class="mn">R$6,32</td><td class="mn danger">—</td></tr>
+          <tr><td class="b c">10</td><td class="b">JBW8J64</td><td class="mn">R$24.722</td><td class="mn">3.999 L</td><td class="mn em">R$6,18</td><td class="mn danger">—</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div>
+      <div class="st"><span class="st-dot"></span>Top 10 Fornecedores de Combustível</div>
+      <div class="tw"><table>
+        <thead><tr><th>#</th><th>Posto / Fornecedor</th><th>Custo (R$)</th><th>Litros</th><th>Preço/L</th><th>Avaliação</th></tr></thead>
+        <tbody>
+          <tr><td class="b c">1</td><td class="b">Otto Transp. e Logistica</td><td class="mn">R$224.831</td><td class="mn">35.021 L</td><td class="mn warn">R$6,42</td><td><span class="bx bem">🟢 PRÓPRIO</span></td></tr>
+          <tr><td class="b c">2</td><td class="b">Arco Iris Roseira</td><td class="mn">R$106.672</td><td class="mn">16.111 L</td><td class="mn warn">R$6,62</td><td><span class="bx bem">🟢 BOM</span></td></tr>
+          <tr><td class="b c">3</td><td class="b">Guerra Comercio Petroleo</td><td class="mn">R$69.231</td><td class="mn">11.153 L</td><td class="mn">R$6,21</td><td><span class="bx bem">✅ MELHOR PREÇO</span></td></tr>
+          <tr><td class="b c">4</td><td class="b">Auto Posto Guerra</td><td class="mn">R$38.189</td><td class="mn">5.798 L</td><td class="mn warn">R$6,59</td><td><span class="bx bwa">🟡 REGULAR</span></td></tr>
+          <tr><td class="b c">5</td><td class="b">Posto Barão de Araras</td><td class="mn">R$36.934</td><td class="mn">5.822 L</td><td class="mn">R$6,34</td><td><span class="bx bem">🟢 BOM</span></td></tr>
+          <tr><td class="b c">6</td><td class="b">Posto 7 Araras</td><td class="mn">R$32.187</td><td class="mn">4.924 L</td><td class="mn warn">R$6,54</td><td><span class="bx bwa">🟡 REGULAR</span></td></tr>
+          <tr><td class="b c">7</td><td class="b">P. Arco Iris de Roseira</td><td class="mn">R$29.362</td><td class="mn">4.824 L</td><td class="mn em">R$6,09</td><td><span class="bx bem">✅ EXCELENTE</span></td></tr>
+          <tr><td class="b c">8</td><td class="b">Rodoposto Turmalina</td><td class="mn">R$26.784</td><td class="mn">4.408 L</td><td class="mn em">R$6,08</td><td><span class="bx bem">✅ EXCELENTE</span></td></tr>
+          <tr><td class="b c">9</td><td class="b">Posto Monte Carlo Resende</td><td class="mn">R$23.822</td><td class="mn">3.615 L</td><td class="mn warn">R$6,59</td><td><span class="bx bwa">🟡 REGULAR</span></td></tr>
+          <tr><td class="b c">10</td><td class="b">Graal Turmalina</td><td class="mn">R$19.927</td><td class="mn">3.072 L</td><td class="mn warn">R$6,49</td><td><span class="bx bwa">🟡 REGULAR</span></td></tr>
+        </tbody>
+      </table></div>
+      <div class="al al-e"><div class="al-t">⭐ MELHOR POSTO — Rodoposto Turmalina</div><div class="al-bd">Menor preço médio: R$5,89/L · 4.408 litros · Concentrar abastecimentos aqui. Economia estimada vs preço médio (R$6,47): <strong>~R$43.000/mês</strong>.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- S4: DASHBOARD EXECUTIVO -->
+<section class="sec" id="s4">
+  <!-- KPIs — mesmo formato do CFO Financeiro -->
+  <div class="kg g4">
+    <div class="kc em"><div class="kl">Receita Total</div><div class="kv em">R$2.355.024</div><div class="ks">período Março/2026</div></div>
+    <div class="kc danger"><div class="kl">Custo Total</div><div class="kv danger">R$2.468.560</div><div class="ks">todos lançamentos</div></div>
+    <div class="kc warn"><div class="kl">Resultado</div><div class="kv warn">-R$113.537</div><div class="ks">PREJUÍZO</div></div>
+    <div class="kc warn"><div class="kl">Margem</div><div class="kv warn">-4,8%</div><div class="ks">meta: positivo</div></div>
+  </div>
+  <!-- KPIs secundários — mesmo padrão -->
+  <div class="kg g4">
+    <div class="kc gray"><div class="kl">Frota Total</div><div class="kv">109</div><div class="ks">veículos cadastrados</div></div>
+    <div class="kc gold"><div class="kl">Dias Operacionais</div><div class="kv gold">23</div><div class="ks">com faturamento</div></div>
+    <div class="kc em"><div class="kl">Dias com Lucro</div><div class="kv em">11</div><div class="ks">47,8% dos dias operacionais</div></div>
+    <div class="kc danger"><div class="kl">Dias com Prejuízo</div><div class="kv danger">12</div><div class="ks">52,2% dos dias operacionais</div></div>
+  </div>
+
+  <div class="dc"><div class="dc-t">⚠ ALERTA — OPERAÇÃO MARÇO/2026 (23/03)</div><div class="dc-v">Prejuízo acumulado: R$113.537 — Melhora vs início do mês</div><div class="dc-s">51,1% da frota operacional parada · 12 de 23 dias com resultado negativo · Custo 4,8% acima da receita · Rodotrem entrou em lucro (5,5%) · ISOESTE com 58,1% de margem</div></div>
+
+  <!-- highlight ISOESTE — mesmo padrão do CFO -->
+  <div class="hl"><div class="hl-t">✅ DESTAQUE — ISOESTE + RODOTREM EM LUCRO</div><div class="hl-v">ISOESTE: R$104.613 lucro (58,1%) · Rodotrem: +R$114.898 (5,5%) · 2 frotas positivas em 23/03</div><div class="hl-s">Rodotrem inverteu prejuízo com novos fretes. ISOESTE mantém 4 tocos parados com receita garantida por contrato. Modelo a replicar.</div></div>
+
+  <div class="cg cg2">
+    <div class="cb"><div class="ct">Resultado Diário — Receita vs Custo (R$ mil) — Março/2026</div><div class="ch" style="height:230px"><canvas id="c_dias"></canvas></div></div>
+    <div class="cb"><div class="ct">Situação da Frota Operacional — 45 veículos</div><div class="ch" style="height:230px"><canvas id="c_situacao"></canvas></div></div>
+  </div>
+  <div class="cg cg2">
+    <div class="cb"><div class="ct">Resultado por Tipo de Frota (R$)</div><div class="ch" style="height:230px"><canvas id="c_tipofrota"></canvas></div></div>
+    <div class="cb"><div class="ct">Distribuição da Frota por Tipo de Equipamento</div><div class="ch" style="height:230px"><canvas id="c_equip"></canvas></div></div>
+  </div>
+
+  <!-- Tabela de resultado por frota — mesmo formato do CFO -->
+  <div class="st"><span class="st-dot"></span>Resultado por Tipo de Frota — Visão Executiva</div>
+  <div class="tw"><table>
+    <thead><tr><th>Tipo Frota</th><th>Veículos</th><th>Receita</th><th>Custo</th><th>Resultado</th><th>Margem</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="b">🚛 6-12% Rodotrem</td><td class="mn c">41</td><td class="mn em">R$2.073.055</td><td class="mn">R$1.958.157</td><td class="em">+R$114.898</td><td class="em">+5,5%</td><td><span class="bx bem">✅ LUCRO</span></td></tr>
+      <tr><td class="b">🚛 7-13% LS</td><td class="mn c">2</td><td class="mn">R$72.969</td><td class="mn danger">R$89.706</td><td class="danger">-R$16.737</td><td class="danger">-22,9%</td><td><span class="bx brd">🔴 PREJUÍZO</span></td></tr>
+      <tr><td class="b">🚛 8-15% LS Antigo</td><td class="mn c">2</td><td class="mn">R$29.000</td><td class="mn danger">R$34.066</td><td class="danger">-R$5.066</td><td class="danger">-17,5%</td><td><span class="bx brd">🔴 PREJUÍZO</span></td></tr>
+      <tr style="background:rgba(0,212,170,.04)"><td class="b em">✅ 9-FROTA ISOESTE</td><td class="mn c">4</td><td class="mn em">R$180.000</td><td class="mn">R$75.387</td><td class="em">+R$104.613</td><td class="em">+58,1%</td><td><span class="bx bem">✅ ÚNICO LUCRO</span></td></tr>
+      <tr><td class="b">🚃 2-Próprio Carreta</td><td class="mn c">50</td><td class="mn">R$0</td><td class="mn danger">R$265.470</td><td class="danger">-R$265.470</td><td>—</td><td><span class="bx bgr">CENTRO CUSTO</span></td></tr>
+      <tr class="tot"><td class="b">📊 TOTAL GERAL</td><td class="mn c">109</td><td class="mn em">R$2.355.024</td><td class="mn danger">R$2.468.560</td><td class="danger">-R$113.537</td><td class="warn">-4,8%</td><td><span class="bx bwa">⚠ PREJUÍZO</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- Tabela diária — mesmo formato do CFO -->
+  <div class="st"><span class="st-dot"></span>Resultado Financeiro por Dia — Março/2026</div>
+  <div class="tw"><table>
+    <thead><tr><th>Data</th><th>Receita</th><th>Custo</th><th>Resultado</th><th>Margem</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="b">01/03</td><td class="mn">R$84.000</td><td class="mn danger">R$84.388</td><td class="danger">-R$388</td><td class="danger">-0,5%</td><td><span class="bx bwa">⚠ ZERO</span></td></tr>
+      <tr><td class="b">02/03</td><td class="mn">R$35.462</td><td class="mn danger">R$158.618</td><td class="danger">-R$123.156</td><td class="danger">-347,3%</td><td><span class="bx brd">🔴 CRÍTICO</span></td></tr>
+      <tr><td class="b">03/03</td><td class="mn">R$25.231</td><td class="mn danger">R$53.443</td><td class="danger">-R$28.212</td><td class="danger">-111,8%</td><td><span class="bx brd">🔴 NEGATIVO</span></td></tr>
+      <tr><td class="b">04/03</td><td class="mn">R$64.470</td><td class="mn danger">R$165.363</td><td class="danger">-R$100.893</td><td class="danger">-156,5%</td><td><span class="bx brd">🔴 CRÍTICO</span></td></tr>
+      <tr><td class="b">05/03</td><td class="mn">R$95.218</td><td class="mn danger">R$147.353</td><td class="danger">-R$52.135</td><td class="danger">-54,8%</td><td><span class="bx brd">🔴 NEGATIVO</span></td></tr>
+      <tr><td class="b">06/03</td><td class="mn em">R$124.159</td><td class="mn">R$95.686</td><td class="em">+R$28.473</td><td class="em">+22,9%</td><td><span class="bx bem">✅ BOA</span></td></tr>
+      <tr><td class="b">07/03</td><td class="mn">R$79.885</td><td class="mn danger">R$130.444</td><td class="danger">-R$50.559</td><td class="danger">-63,3%</td><td><span class="bx brd">🔴 NEGATIVO</span></td></tr>
+      <tr><td class="b">08/03</td><td class="mn em">R$81.800</td><td class="mn">R$34.673</td><td class="em">+R$47.127</td><td class="em">+57,6%</td><td><span class="bx bem">✅ BOA</span></td></tr>
+      <tr><td class="b">09/03</td><td class="mn">R$41.223</td><td class="mn danger">R$85.322</td><td class="danger">-R$44.099</td><td class="danger">-107,0%</td><td><span class="bx brd">🔴 NEGATIVO</span></td></tr>
+      <tr><td class="b">10/03</td><td class="mn em">R$160.949</td><td class="mn">R$89.107</td><td class="em">+R$71.842</td><td class="em">+44,6%</td><td><span class="bx bem">✅ BOA</span></td></tr>
+      <tr><td class="b">11/03</td><td class="mn em">R$144.990</td><td class="mn">R$79.983</td><td class="em">+R$65.007</td><td class="em">+44,8%</td><td><span class="bx bem">✅ BOA</span></td></tr>
+      <tr><td class="b">12/03</td><td class="mn em">R$100.500</td><td class="mn">R$59.717</td><td class="em">+R$40.783</td><td class="em">+40,6%</td><td><span class="bx bem">✅ BOA</span></td></tr>
+      <tr><td class="b">13/03</td><td class="mn em">R$110.936</td><td class="mn">R$86.002</td><td class="em">+R$24.934</td><td class="em">+22,5%</td><td><span class="bx bem">✅ BOA</span></td></tr>
+      <tr><td class="b">14/03</td><td class="mn">R$52.195</td><td class="mn danger">R$73.848</td><td class="danger">-R$21.653</td><td class="danger">-41,5%</td><td><span class="bx brd">🔴 NEGATIVO</span></td></tr>
+      <tr><td class="b">15/03</td><td class="mn">R$12.200</td><td class="mn danger">R$274.210</td><td class="danger">-R$262.010</td><td class="danger">-2147%</td><td><span class="bx brd">🔴 PIOR DIA</span></td></tr>
+      <tr><td class="b">16/03</td><td class="mn em">R$194.090</td><td class="mn">R$107.690</td><td class="em">+R$86.400</td><td class="em">+44,5%</td><td><span class="bx bem">✅ MELHOR</span></td></tr>
+      <tr><td class="b">17/03</td><td class="mn em">R$165.543</td><td class="mn">R$135.657</td><td class="em">+R$29.886</td><td class="em">+18,1%</td><td><span class="bx bem">✅ BOA</span></td></tr>
+      <tr><td class="b">18/03</td><td class="mn em">R$128.328</td><td class="mn">R$87.887</td><td class="em">+R$40.441</td><td class="em">+31,5%</td><td><span class="bx bem">✅ BOA</span></td></tr>
+      <tr><td class="b">19/03</td><td class="mn">R$61.000</td><td class="mn danger">R$77.543</td><td class="danger">-R$16.543</td><td class="danger">-27,1%</td><td><span class="bx brd">🔴 NEGATIVO</span></td></tr>
+      <tr><td class="b">20/03</td><td class="mn">R$90.000</td><td class="mn danger">R$111.039</td><td class="danger">-R$21.039</td><td class="danger">-23,4%</td><td><span class="bx brd">🔴 NEGATIVO</span></td></tr>
+      <tr><td class="b">21/03</td><td class="mn em">R$81.770</td><td class="mn">R$6.716</td><td class="em">+R$75.054</td><td class="em">+91,8%</td><td><span class="bx bem">✅ EXCELENTE</span></td></tr>
+      <tr><td class="b">22/03</td><td class="mn">R$78.900</td><td class="mn danger">R$96.920</td><td class="danger">-R$18.020</td><td class="danger">-22,8%</td><td><span class="bx brd">🔴 NEGATIVO</span></td></tr>
+      <tr><td class="b">23/03</td><td class="mn em">R$158.175</td><td class="mn">R$12.231</td><td class="em">+R$145.944</td><td class="em">+92,3%</td><td><span class="bx bem">✅ MELHOR DIA</span></td></tr>
+      <tr class="tot"><td class="b">TOTAL</td><td class="mn em">R$2.355.024</td><td class="mn danger">R$2.468.560</td><td class="danger">-R$113.537</td><td class="warn">-4,8%</td><td><span class="bx bwa">⚠</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- S8: MANUTENÇÃO -->
+<section class="sec" id="s8">
+  <div class="kg g4">
+    <div class="kc em"><div class="kl">Registros Internos</div><div class="kv em">51</div><div class="ks">REQUISICAO-DESPESA</div></div>
+    <div class="kc danger"><div class="kl">Registros Externos</div><div class="kv danger">317</div><div class="ks">ORDEM_COMPRA-</div></div>
+    <div class="kc em"><div class="kl">Custo Interno</div><div class="kv em">R$9.926</div><div class="ks">4,8% do total manut.</div></div>
+    <div class="kc danger"><div class="kl">Custo Externo</div><div class="kv danger">R$197.517</div><div class="ks">95,2% do total manut.</div></div>
+  </div>
+  <div class="cg cg2">
+    <div class="cb"><div class="ct">Manutenção Interna × Externa — Participação (%)</div><div class="ch" style="height:250px"><canvas id="c_man_tipo"></canvas></div></div>
+    <div class="cb"><div class="ct">Top Planos de Conta — Manutenção (R$)</div><div class="ch" style="height:250px"><canvas id="c_man_plano"></canvas></div></div>
+  </div>
+  <div class="two">
+    <div>
+      <div class="st"><span class="st-dot"></span>🏭 Top 5 Fornecedores — Manutenção Externa</div>
+      <div class="tw"><table>
+        <thead><tr><th>#</th><th>Fornecedor</th><th>Custo (R$)</th><th>% Ext.</th><th>Ops</th><th>Custo Médio</th></tr></thead>
+        <tbody>
+          <tr><td class="b c">1</td><td class="b">SCANIA LATIN AMERICA LTDA</td><td class="mn danger">42.135,57</td><td class="danger">21,3%</td><td class="mn c">15</td><td class="mn danger">R$2.809,04</td></tr>
+          <tr><td class="b c">2</td><td class="b">VARELLA VEICULOS PESADOS</td><td class="mn danger">40.257,12</td><td class="danger">20,4%</td><td class="mn c">59</td><td class="mn">R$682,32</td></tr>
+          <tr><td class="b c">3</td><td class="b">AUTO FREIOS ESTRADAO</td><td class="mn">22.758,09</td><td>11,5%</td><td class="mn c">85</td><td class="mn">R$267,74</td></tr>
+          <tr><td class="b c">4</td><td class="b">VOLKSWAGEN TRUCK & BUS</td><td class="mn">17.520,88</td><td>8,9%</td><td class="mn c">6</td><td class="mn danger">R$2.920,15</td></tr>
+          <tr><td class="b c">5</td><td class="b">RL RASTREADORES LTDA</td><td class="mn">15.282,00</td><td>7,7%</td><td class="mn c">9</td><td class="mn">R$1.698,00</td></tr>
+          <tr class="tot"><td colspan="2">📊 TOP 5</td><td class="mn danger">137.953,66</td><td class="danger">69,8%</td><td class="mn c">174</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div>
+      <div class="st"><span class="st-dot"></span>🔧 Top Planos de Conta — Manutenção</div>
+      <div class="tw"><table>
+        <thead><tr><th>#</th><th>Plano de Conta</th><th>Custo (R$)</th><th>Ocorrências</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="b c">1</td><td class="b">Peça / Acessório</td><td class="mn danger">106.129,34</td><td class="mn c">267</td><td><span class="bx brd">🔴 DOMINANTE</span></td></tr>
+          <tr><td class="b c">2</td><td class="b">Mão-de-Obra Mec./Elét.</td><td class="mn danger">91.900,94</td><td class="mn c">66</td><td><span class="bx brd">🔴 ALTO</span></td></tr>
+          <tr><td class="b c">3</td><td class="b">Lavajato</td><td class="mn">6.810,00</td><td class="mn c">18</td><td><span class="bx bem">🟢 BAIXO</span></td></tr>
+          <tr><td class="b c">4</td><td class="b">Pneu - Recapagem</td><td class="mn">380,04</td><td class="mn c">15</td><td><span class="bx bem">🟢 BAIXO</span></td></tr>
+        </tbody>
+      </table></div>
+      <div class="al al-g"><div class="al-t">💡 Insights — Manutenção</div><div class="al-bd">• Externa 95,2% vs interna 4,8% · Custo externo 8,2× maior por veículo<br>• SCANIA (R$42.136) + VARELLA (R$40.257) = 41,9% da manutenção externa<br>• Peça/Acessório (53,8%) + Mão-de-obra (46,5%) = 100% dos custos de manutenção</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- S9: DISPONIBILIDADE -->
+<section class="sec" id="s9">
+  <div class="kg g5">
+    <div class="kc danger"><div class="kl">% Disponibilidade</div><div class="kv danger">48,9%</div><div class="ks">meta: 90–95% · CRÍTICO</div></div>
+    <div class="kc em"><div class="kl">Em Viagem</div><div class="kv em">22</div><div class="ks">48,9% da frota op.</div></div>
+    <div class="kc warn"><div class="kl">Em Oficina</div><div class="kv warn">0</div><div class="ks">0% — verificar</div></div>
+    <div class="kc danger"><div class="kl">Parados</div><div class="kv danger">23</div><div class="ks">51,1% da frota op.</div></div>
+    <div class="kc gray"><div class="kl">Total Operacional</div><div class="kv">45</div><div class="ks">cavalos + tocos</div></div>
+  </div>
+  <div class="dc"><div class="dc-t">🚨 ALERTA — DISPONIBILIDADE 48,9% (META: 90-95%)</div><div class="dc-v">23 veículos parados de 45 operacionais</div><div class="dc-s">Cada veículo parado = custo fixo sem receita · Investigar causas imediatamente · Apenas ISOESTE parada tem justificativa (contrato garantido)</div></div>
+  <div class="cg cg2">
+    <div class="cb"><div class="ct">Situação da Frota — Cavalos + Tocos (45 veículos)</div><div class="ch" style="height:240px"><canvas id="c_disp_pizza"></canvas></div></div>
+    <div class="cb"><div class="ct">% Disponibilidade por Tipo de Frota vs Meta 90%</div><div class="ch" style="height:240px"><canvas id="c_disp_tipo"></canvas></div></div>
+  </div>
+  <div class="two">
+    <div>
+      <div class="st"><span class="st-dot"></span>Classificação por Tipo de Equipamento</div>
+      <div class="tw"><table>
+        <thead><tr><th>Tipo</th><th>Total</th><th>Em Viagem</th><th>Oficina</th><th>Parado</th><th>% Disponível</th></tr></thead>
+        <tbody>
+          <tr><td class="b">🚛 Cavalo Mecânico</td><td class="mn c">41</td><td class="mn c em">22</td><td class="mn c">0</td><td class="mn c danger">19</td><td class="warn">53,7%</td></tr>
+          <tr><td class="b">🛻 Toco (ISOESTE)</td><td class="mn c">4</td><td class="mn c">0</td><td class="mn c">0</td><td class="mn c danger">4</td><td class="em">0% *</td></tr>
+          <tr class="tot"><td class="b">📊 TOTAL</td><td class="mn c">45</td><td class="mn c em">22</td><td class="mn c">0</td><td class="mn c danger">23</td><td class="danger"><span class="bx brd">48,9%</span></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div>
+      <div class="st"><span class="st-dot"></span>Disponibilidade por Tipo de Frota</div>
+      <div class="tw"><table>
+        <thead><tr><th>Tipo Frota</th><th>Total</th><th>Viagem</th><th>Parado</th><th>% Disp.</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="b">🚛 6-12% Rodotrem</td><td class="mn c">37</td><td class="mn c em">20</td><td class="mn c danger">17</td><td class="warn">54,1%</td><td><span class="bx brd">🔴 ABAIXO</span></td></tr>
+          <tr><td class="b">🚛 7-13% LS</td><td class="mn c">2</td><td class="mn c em">1</td><td class="mn c danger">1</td><td class="warn">50,0%</td><td><span class="bx brd">🔴 ABAIXO</span></td></tr>
+          <tr><td class="b">🚛 8-15% LS Antigo</td><td class="mn c">2</td><td class="mn c em">1</td><td class="mn c danger">1</td><td class="warn">50,0%</td><td><span class="bx brd">🔴 ABAIXO</span></td></tr>
+          <tr><td class="b em">🆕 9-FROTA ISOESTE</td><td class="mn c">4</td><td class="mn c">0</td><td class="mn c">4</td><td class="em">0% *</td><td><span class="bx bem">✅ LUCRATIVO</span></td></tr>
+          <tr class="tot"><td class="b">📊 TOTAL</td><td class="mn c">45</td><td class="mn c em">22</td><td class="mn c danger">23</td><td class="danger">48,9%</td><td><span class="bx brd">🔴</span></td></tr>
+        </tbody>
+      </table></div>
+      <div class="al al-e"><div class="al-t">⭐ ISOESTE: 0% disponibilidade física mas 58,1% de lucro</div><div class="al-bd">4 Tocos PARADOS com <strong>receita garantida de R$180.000</strong> por contrato. Disponibilidade física ≠ lucratividade. Modelo a replicar.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- S6: RANKING / FATURAMENTO POR PLACA -->
+<section class="sec" id="s6">
+  <div class="kg g4">
+    <div class="kc em"><div class="kl">Melhor Faturamento</div><div class="kv em" style="font-size:1.1429rem">TFY2E81</div><div class="ks">R$102.212 receita</div></div>
+    <div class="kc danger"><div class="kl">Maior Custo</div><div class="kv danger" style="font-size:1.1429rem">TFY2E81</div><div class="ks">R$76.794 custo</div></div>
+    <div class="kc gold"><div class="kl">Melhor Margem (excl. ISOESTE)</div><div class="kv gold" style="font-size:1.1429rem">FRA8F45</div><div class="ks">+40,7% de margem</div></div>
+    <div class="kc danger"><div class="kl">Pior Resultado</div><div class="kv danger" style="font-size:1.1429rem">OMX5H75</div><div class="ks">-R$33.622 prejuízo</div></div>
+  </div>
+  <div class="cg cg2">
+    <div class="cb"><div class="ct">Top 10 Veículos — Maior Faturamento (R$)</div><div class="ch" style="height:280px"><canvas id="c_rank_rec"></canvas></div></div>
+    <div class="cb"><div class="ct">Top 10 Veículos — Maior Custo (R$)</div><div class="ch" style="height:280px"><canvas id="c_rank_cus"></canvas></div></div>
+  </div>
+  <div class="two">
+    <div>
+      <div class="st"><span class="st-dot"></span>Top 10 Veículos — Maior Receita</div>
+      <div class="tw"><table>
+        <thead><tr><th>#</th><th>Placa</th><th>Situação</th><th>Receita</th><th>Custo</th><th>Resultado</th><th>Margem</th></tr></thead>
+        <tbody>
+          <tr><td class="b c gold">1</td><td class="b">TFY2E81</td><td><span class="bx bem">EM VIAGEM</span></td><td class="mn em">R$102.212</td><td class="mn">R$76.794</td><td class="em">+R$25.418</td><td class="em">+24,9%</td></tr>
+          <tr><td class="b c">2</td><td class="b">RBT1J38</td><td><span class="bx brd">PARADO</span></td><td class="mn em">R$78.831</td><td class="mn">R$56.469</td><td class="em">+R$22.362</td><td class="em">+28,4%</td></tr>
+          <tr><td class="b c">3</td><td class="b">TFT3D01</td><td><span class="bx bem">EM VIAGEM</span></td><td class="mn em">R$77.895</td><td class="mn">R$66.697</td><td class="em">+R$11.198</td><td class="em">+14,4%</td></tr>
+          <tr><td class="b c">4</td><td class="b">RBT1J48</td><td><span class="bx bem">EM VIAGEM</span></td><td class="mn">R$76.901</td><td class="mn">R$72.177</td><td class="em">+R$4.724</td><td class="em">+6,1%</td></tr>
+          <tr><td class="b c">5</td><td class="b">RBT1I18</td><td><span class="bx bem">EM VIAGEM</span></td><td class="mn">R$74.795</td><td class="mn">R$65.986</td><td class="em">+R$8.809</td><td class="em">+11,8%</td></tr>
+          <tr><td class="b c">6</td><td class="b">JBW8J64</td><td><span class="bx brd">PARADO</span></td><td class="mn">R$74.795</td><td class="mn">R$54.380</td><td class="em">+R$20.415</td><td class="em">+27,3%</td></tr>
+          <tr><td class="b c">7</td><td class="b">SDK7G21</td><td><span class="bx bem">EM VIAGEM</span></td><td class="mn">R$74.295</td><td class="mn">R$69.016</td><td class="em">+R$5.279</td><td class="em">+7,1%</td></tr>
+          <tr><td class="b c">8</td><td class="b">SDO5I30</td><td><span class="bx bem">EM VIAGEM</span></td><td class="mn">R$72.757</td><td class="mn">R$66.605</td><td class="em">+R$6.152</td><td class="em">+8,5%</td></tr>
+          <tr><td class="b c">9</td><td class="b">SDO5C30</td><td><span class="bx bem">EM VIAGEM</span></td><td class="mn">R$68.895</td><td class="mn">R$62.059</td><td class="em">+R$6.836</td><td class="em">+9,9%</td></tr>
+          <tr><td class="b c">10</td><td class="b">TFI9B38</td><td><span class="bx brd">PARADO</span></td><td class="mn">R$68.795</td><td class="mn">R$54.435</td><td class="em">+R$14.360</td><td class="em">+20,9%</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div>
+      <div class="st"><span class="st-dot"></span>Top 10 Veículos — Maior Custo</div>
+      <div class="tw"><table>
+        <thead><tr><th>#</th><th>Placa</th><th>Situação</th><th>Custo</th><th>Receita</th><th>Resultado</th></tr></thead>
+        <tbody>
+          <tr><td class="b c" style="color:var(--danger)">1</td><td class="b">TFY2E81</td><td><span class="bx bem">EM VIAGEM</span></td><td class="mn danger">R$76.794</td><td class="mn em">R$102.212</td><td class="em">+R$25.418</td></tr>
+          <tr><td class="b c">2</td><td class="b">TGN3H72</td><td><span class="bx bem">EM VIAGEM</span></td><td class="mn danger">R$72.925</td><td class="mn">R$60.747</td><td class="danger">-R$12.178</td></tr>
+          <tr><td class="b c">3</td><td class="b">RBT1J48</td><td><span class="bx bem">EM VIAGEM</span></td><td class="mn danger">R$72.177</td><td class="mn em">R$76.901</td><td class="em">+R$4.724</td></tr>
+          <tr><td class="b c">4</td><td class="b">SCR1D58</td><td><span class="bx bem">EM VIAGEM</span></td><td class="mn danger">R$70.773</td><td class="mn">R$66.812</td><td class="danger">-R$3.961</td></tr>
+          <tr><td class="b c">5</td><td class="b">SDK7G21</td><td><span class="bx bem">EM VIAGEM</span></td><td class="mn danger">R$69.016</td><td class="mn em">R$74.295</td><td class="em">+R$5.279</td></tr>
+          <tr><td class="b c">6</td><td class="b">TFT3D01</td><td><span class="bx bem">EM VIAGEM</span></td><td class="mn danger">R$66.697</td><td class="mn em">R$77.895</td><td class="em">+R$11.198</td></tr>
+          <tr><td class="b c">7</td><td class="b">SDO5I30</td><td><span class="bx bem">EM VIAGEM</span></td><td class="mn danger">R$66.605</td><td class="mn">R$72.757</td><td class="em">+R$6.152</td></tr>
+          <tr><td class="b c">8</td><td class="b">RBS9J98</td><td><span class="bx brd">PARADO</span></td><td class="mn danger">R$66.392</td><td class="mn">R$59.795</td><td class="danger">-R$6.597</td></tr>
+          <tr><td class="b c">9</td><td class="b">RBT1I18</td><td><span class="bx bem">EM VIAGEM</span></td><td class="mn danger">R$65.986</td><td class="mn em">R$74.795</td><td class="em">+R$8.809</td></tr>
+          <tr><td class="b c">10</td><td class="b">SDO5C30</td><td><span class="bx bem">EM VIAGEM</span></td><td class="mn danger">R$62.059</td><td class="mn">R$68.895</td><td class="em">+R$6.836</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+</section>
+
+<!-- S11: DIAGNÓSTICO -->
+<section class="sec" id="s11">
+  <div class="dc"><div class="dc-t">⚠ SITUAÇÃO GERAL — MARÇO/2026 (atualizado 23/03)</div><div class="dc-v">PREJUÍZO DE R$113.537 — MELHORA SIGNIFICATIVA</div><div class="dc-s">Receita R$2.355.024 vs Custo R$2.468.560 · Margem -4,8% · 51,1% da frota parada · Rodotrem em lucro (+5,5%) · ISOESTE lucrativa (58,1%)</div></div>
+  <div class="dg">
+    <div class="dcard dcard-w"><div style="font-size:1.4286rem;margin-bottom:8px">💰</div><div style="font-size:0.8571rem;font-weight:700;color:var(--text);margin-bottom:6px">Situação Financeira</div><div style="font-size:0.7857rem;color:var(--text2);line-height:1.7">Prejuízo de <strong style="color:var(--warn)">R$113.537</strong>. Custo 4,8% acima da receita. 12 de 23 dias no vermelho. Rodotrem e ISOESTE positivos.</div></div>
+    <div class="dcard dcard-d"><div style="font-size:1.4286rem;margin-bottom:8px">🚛</div><div style="font-size:0.8571rem;font-weight:700;color:var(--text);margin-bottom:6px">Situação Operacional</div><div style="font-size:0.7857rem;color:var(--text2);line-height:1.7"><strong style="color:var(--danger)">51,1% da frota parada</strong> (23/45). Meta: 90-95%. Zero veículos em oficina — possível subregistro.</div></div>
+    <div class="dcard dcard-w"><div style="font-size:1.4286rem;margin-bottom:8px">⛽</div><div style="font-size:0.8571rem;font-weight:700;color:var(--text);margin-bottom:6px">Situação Combustível</div><div style="font-size:0.7857rem;color:var(--text2);line-height:1.7">120.694 L (+101% acima da meta). R$781.409. Preço médio R$6,47/L. <strong style="color:var(--danger)">Sem hodômetro = sem controle.</strong></div></div>
+    <div class="dcard dcard-d"><div style="font-size:1.4286rem;margin-bottom:8px">🔧</div><div style="font-size:0.8571rem;font-weight:700;color:var(--text);margin-bottom:6px">Situação Manutenção</div><div style="font-size:0.7857rem;color:var(--text2);line-height:1.7">Externa = <strong style="color:var(--danger)">95,2% dos custos</strong>. Peça+Mão-de-obra = 100% da manutenção. Custo externo 8,2× maior que interno.</div></div>
+    <div class="dcard dcard-e"><div style="font-size:1.4286rem;margin-bottom:8px">⭐</div><div style="font-size:0.8571rem;font-weight:700;color:var(--text);margin-bottom:6px">Destaque ISOESTE + Rodotrem</div><div style="font-size:0.7857rem;color:var(--text2);line-height:1.7">ISOESTE: <strong style="color:var(--em)">58,1% de margem</strong> · R$104.613. Rodotrem: <strong style="color:var(--em)">+5,5%</strong> · R$114.898. Replicar modelo ISOESTE.</div></div>
+    <div class="dcard dcard-w"><div style="font-size:1.4286rem;margin-bottom:8px">📉</div><div style="font-size:0.8571rem;font-weight:700;color:var(--text);margin-bottom:6px">Pressão de Custos</div><div style="font-size:0.7857rem;color:var(--text2);line-height:1.7">Aquisição <strong style="color:var(--danger)">45,6%</strong> + Combustível 31,7% = 77,3% dos custos. Estrutura ainda incompatível com receita.</div></div>
+  </div>
+  <div class="st"><span class="st-dot"></span>🔴 Gargalos Prioritários</div>
+  <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:20px">
+    <div class="rk" style="border-left:3px solid var(--danger)"><div class="rk-pos" style="color:var(--danger)">1</div><div class="rk-info"><div class="rk-name">51,1% da frota parada — gargalo operacional crítico</div><div class="rk-sub">23/45 veículos sem gerar receita · custo fixo acumulando sem contrapartida</div></div><div class="rk-val" style="color:var(--danger)">CRÍTICO</div></div>
+    <div class="rk" style="border-left:3px solid var(--em)"><div class="rk-pos" style="color:var(--em)">2</div><div class="rk-info"><div class="rk-name">Rodotrem inverteu — agora com lucro de R$114.898 (+5,5%)</div><div class="rk-sub">Rec R$2,07M vs Cus R$1,96M · novos fretes adicionados até 23/03</div></div><div class="rk-val" style="color:var(--em)">POSITIVO</div></div>
+    <div class="rk" style="border-left:3px solid var(--warn)"><div class="rk-pos" style="color:var(--warn)">3</div><div class="rk-info"><div class="rk-name">Combustível 101% acima da meta — sem controle de km/L</div><div class="rk-sub">120.694 L vs meta 60.000 L · hodômetro urgente · custo R$781.409</div></div><div class="rk-val" style="color:var(--warn)">ALTO</div></div>
+    <div class="rk" style="border-left:3px solid var(--warn)"><div class="rk-pos" style="color:var(--warn)">4</div><div class="rk-info"><div class="rk-name">Manutenção externa = 95,2% dos custos de manutenção</div><div class="rk-sub">R$197.517 em ORDEM_COMPRA- vs R$9.926 em REQUISICAO-DESPESA</div></div><div class="rk-val" style="color:var(--warn)">ALTO</div></div>
+    <div class="rk" style="border-left:3px solid var(--warn)"><div class="rk-pos" style="color:var(--warn)">5</div><div class="rk-info"><div class="rk-name">Aquisição de veículos = 45,6% do custo total</div><div class="rk-sub">R$1.126.086 em financiamento · custo fixo elevado</div></div><div class="rk-val" style="color:var(--warn)">ALTO</div></div>
+  </div>
+  <div class="three">
+    <div class="al al-d" style="margin:0"><div class="al-t">🔴 IMEDIATO (0-30 dias)</div><div class="al-bd">1. Investigar causas dos 23 veículos parados<br>2. Criar plano de retorno para cada veículo<br>3. Expandir modelo de contrato ISOESTE<br>4. Implementar hodômetro em toda a frota<br>5. Renegociar contratos Rodotrem deficitários</div></div>
+    <div class="al al-g" style="margin:0"><div class="al-t">🟡 CURTO PRAZO (30-90 dias)</div><div class="al-bd">1. Programa de manutenção preventiva<br>2. Negociar contratos com Scania e Varella<br>3. Concentrar abastecimentos em postos baratos<br>4. Controle de km/L por motorista<br>5. Definir meta: disponibilidade ≥ 75%</div></div>
+    <div class="al al-e" style="margin:0"><div class="al-t">🟢 MÉDIO PRAZO (90-180 dias)</div><div class="al-bd">1. Reestruturar mix de frotas<br>2. Meta de disponibilidade: ≥ 85%<br>3. Sistema de custo por veículo/motorista<br>4. Meta de margem operacional: ≥ 15%<br>5. Expandir contratos modelo ISOESTE</div></div>
+  </div>
+</section>
+
+<!-- S1: AUDITORIA -->
+<section class="sec" id="s1">
+  <div class="kg g4">
+    <div class="kc gold"><div class="kl">Erros Encontrados</div><div class="kv gold">6</div><div class="ks">inconsistências identificadas</div></div>
+    <div class="kc em"><div class="kl">Erros Corrigidos</div><div class="kv em">6</div><div class="ks">100% resolvidos</div></div>
+    <div class="kc em"><div class="kl">Integridade</div><div class="kv em">100%</div><div class="ks">base validada</div></div>
+    <div class="kc em"><div class="kl">Status</div><div class="kv em" style="font-size:1.1429rem">✓ CONFIÁVEL</div><div class="ks">apto para decisão</div></div>
+  </div>
+  <div class="st"><span class="st-dot"></span>Erros Identificados e Corrigidos</div>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th>Erro</th><th>Valor Errado</th><th>Valor Correto</th><th>Causa Raiz</th><th>Correção Aplicada</th></tr></thead>
+    <tbody>
+      <tr><td class="b c">1</td><td class="b">Frota em Viagem</td><td><span class="bx brd">577</span></td><td><span class="bx bem">22</span></td><td>Contava REGISTROS</td><td>COUNTIF — veículos únicos</td></tr>
+      <tr><td class="b c">2</td><td class="b">Frota em Oficina</td><td><span class="bx brd">389</span></td><td><span class="bx bem">0</span></td><td>Contava REGISTROS</td><td>Veículos únicos por situação</td></tr>
+      <tr><td class="b c">3</td><td class="b">Frota Parada</td><td><span class="bx brd">38</span></td><td><span class="bx bem">23</span></td><td>Contava REGISTROS</td><td>COUNTIFS — veículos únicos</td></tr>
+      <tr><td class="b c">4</td><td class="b">Frota Total Operacional</td><td><span class="bx brd">1.004</span></td><td><span class="bx bem">45</span></td><td>Contava lançamentos</td><td>45 veículos (cavalos+tocos)</td></tr>
+      <tr><td class="b c">5</td><td class="b">% Disponibilidade</td><td><span class="bx brd">57,47%</span></td><td><span class="bx bem">48,9%</span></td><td>Base de cálculo errada</td><td>22/45 = 48,9% correto</td></tr>
+      <tr><td class="b c">6</td><td class="b">Fórmulas de Custo</td><td><span class="bx brd">#REF!</span></td><td><span class="bx bem">R$2.468.560</span></td><td>Referência ao cabeçalho</td><td>SUMIF reconstruído</td></tr>
+    </tbody>
+  </table></div>
+  <div class="hl"><div class="hl-t">⭐ ACHADO CRÍTICO DA AUDITORIA — FROTA ISOESTE</div><div class="hl-v">4 Tocos PARADOS · Receita R$180.000 · Custo R$75.387 · LUCRO R$104.613 · Margem 58,1%</div><div class="hl-s">TFU1H22 · SDD8I72 · SDD8H62 · SDD8H72 — FROTA COM MAIOR RESULTADO POSITIVO COMPROVADO</div></div>
+</section>
+
+<!-- S2: BASE RAW -->
+<section class="sec" id="s2">
+  <div class="kg g4">
+    <div class="kc blue"><div class="kl">Total de Registros</div><div class="kv blue">1.450</div><div class="ks">lançamentos no período</div></div>
+    <div class="kc blue"><div class="kl">Colunas</div><div class="kv blue">38</div><div class="ks">campos de dados</div></div>
+    <div class="kc blue"><div class="kl">Tipos de Lançamento</div><div class="kv blue">7</div><div class="ks">categorias distintas</div></div>
+    <div class="kc blue"><div class="kl">Período</div><div class="kv blue" style="font-size:1.1429rem">MAR/2026</div><div class="ks">01 a 23/03/2026</div></div>
+  </div>
+  <div class="st"><span class="st-dot"></span>Colunas Disponíveis na Base</div>
+  <div class="chips">
+    <span class="chip">Tipo</span><span class="chip">Documento</span><span class="chip">Cód</span><span class="chip" style="background:var(--gold-dim);color:var(--gold2)">VEICULO</span><span class="chip">MATERIAL</span><span class="chip">Qtd</span><span class="chip" style="background:var(--danger-dim);color:var(--danger)">CUSTO</span><span class="chip" style="background:var(--em-dim);color:var(--em)">RECEITA</span><span class="chip">MOTORISTA</span><span class="chip">DATA</span><span class="chip">CLIENTE/FORNECEDOR</span><span class="chip" style="background:var(--blue-dim);color:var(--blue)">PLANO DE CONTA</span><span class="chip">SITUAÇÃO VEICULO</span><span class="chip">TIPO FROTA</span><span class="chip">TIPO LAYOUT</span><span class="chip">MARCA</span><span class="chip">MODELO</span><span class="chip">LITROS</span><span class="chip">PROPRIETÁRIO</span>
+  </div>
+  <div class="st"><span class="st-dot"></span>Tipos de Lançamento — Distribuição</div>
+  <div class="tw"><table>
+    <thead><tr><th>Tipo</th><th>Classificação</th><th>Registros</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td class="b mn">ABASTECIMENTO-</td><td><span class="bx bwa">CUSTO VARIÁVEL</span></td><td class="mn">471</td><td>Combustível e Arla</td></tr>
+      <tr><td class="b mn">ORDEM_COMPRA-</td><td><span class="bx brd">MANUT. EXTERNA</span></td><td class="mn">317</td><td>Ordens de compra — fornecedores</td></tr>
+      <tr><td class="b mn">RATEIO_FROTA-</td><td><span class="bx bwa">CUSTO</span></td><td class="mn">303</td><td>Rateios de custo por frota</td></tr>
+      <tr><td class="b mn">MINUTA-RECEITA</td><td><span class="bx bem">RECEITA</span></td><td class="mn">226</td><td>Fretes e receitas de transporte</td></tr>
+      <tr><td class="b mn">DESPESA_ACERTO-</td><td><span class="bx bwa">CUSTO</span></td><td class="mn">81</td><td>Acertos, comissões, diárias</td></tr>
+      <tr><td class="b mn">REQUISICAO-DESPESA</td><td><span class="bx bem">MANUT. INTERNA</span></td><td class="mn">51</td><td>Requisições internas de peças</td></tr>
+      <tr><td class="b mn">DIARIA-RECEITA</td><td><span class="bx bem">RECEITA</span></td><td class="mn">1</td><td>Diária como receita</td></tr>
+      <tr class="tot"><td class="b">📊 TOTAL</td><td>—</td><td class="mn">1.450</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- S3: BASE_DADOS -->
+<section class="sec" id="s3">
+  <div class="kg g4">
+    <div class="kc em"><div class="kl">Receita Total</div><div class="kv em">R$2,36M</div><div class="ks">R$ 2.355.023,73</div></div>
+    <div class="kc danger"><div class="kl">Custo Total</div><div class="kv danger">R$2,47M</div><div class="ks">R$ 2.468.560,37</div></div>
+    <div class="kc warn"><div class="kl">Resultado</div><div class="kv warn">-R$114K</div><div class="ks">PREJUÍZO R$113.536,64</div></div>
+    <div class="kc warn"><div class="kl">Margem</div><div class="kv warn">-4,8%</div><div class="ks">receita − custo / receita</div></div>
+  </div>
+  <div class="kg g4">
+    <div class="kc gray"><div class="kl">Frota Total</div><div class="kv">109</div><div class="ks">veículos cadastrados</div></div>
+    <div class="kc gray"><div class="kl">Cavalos Mecânicos</div><div class="kv">41</div><div class="ks">37,6% da frota</div></div>
+    <div class="kc gray"><div class="kl">Tocos</div><div class="kv">4</div><div class="ks">3,7% — todos ISOESTE</div></div>
+    <div class="kc gray"><div class="kl">Carretas/Reboques</div><div class="kv">64</div><div class="ks">58,7% da frota</div></div>
+  </div>
+  <div class="hl"><div class="hl-t">⭐ ÚNICA FROTA LUCRATIVA — 9-FROTA ISOESTE</div><div class="hl-v">Receita R$180.000 · Custo R$75.387 · LUCRO R$104.613 · Margem 58,1%</div><div class="hl-s">4 Tocos parados com receita garantida por contrato: TFU1H22 · SDD8I72 · SDD8H62 · SDD8H72</div></div>
+  <div class="st"><span class="st-dot"></span>Resultado por Tipo de Frota</div>
+  <div class="tw"><table>
+    <thead><tr><th>Tipo Frota</th><th>Veículos</th><th>Registros</th><th>Receita</th><th>Custo</th><th>Resultado</th><th>Margem</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="b">🚛 6-12% Rodotrem</td><td class="mn c">41</td><td class="mn c">1.208</td><td class="mn em">R$2.073.055</td><td class="mn">R$1.958.157</td><td class="em">+R$114.898</td><td class="em">+5,5%</td><td><span class="bx bem">✅ LUCRO</span></td></tr>
+      <tr><td class="b">🚛 7-13% LS</td><td class="mn c">2</td><td class="mn c">63</td><td class="mn">R$72.969</td><td class="mn danger">R$89.706</td><td class="danger">-R$16.737</td><td class="danger">-22,9%</td><td><span class="bx brd">🔴 PREJUÍZO</span></td></tr>
+      <tr><td class="b">🚛 8-15% LS Antigo</td><td class="mn c">2</td><td class="mn c">59</td><td class="mn">R$29.000</td><td class="mn danger">R$34.066</td><td class="danger">-R$5.066</td><td class="danger">-17,5%</td><td><span class="bx brd">🔴 PREJUÍZO</span></td></tr>
+      <tr style="background:rgba(0,212,170,.04)"><td class="b em">✅ 9-FROTA ISOESTE</td><td class="mn c">4</td><td class="mn c">41</td><td class="mn em">R$180.000</td><td class="mn">R$75.387</td><td class="em">+R$104.613</td><td class="em">+58,1%</td><td><span class="bx bem">✅ LUCRO</span></td></tr>
+      <tr><td class="b">🚃 Próprio Carreta</td><td class="mn c">50</td><td class="mn c">67</td><td class="mn">R$0</td><td class="mn danger">R$265.470</td><td class="danger">-R$265.470</td><td>—</td><td><span class="bx bgr">CENTRO CUSTO</span></td></tr>
+      <tr class="tot"><td class="b">📊 TOTAL</td><td class="mn c">109</td><td class="mn c">1.450</td><td class="mn em">R$2.355.024</td><td class="mn danger">R$2.468.560</td><td class="danger">-R$113.537</td><td class="warn">-4,8%</td><td><span class="bx bwa">⚠</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- S10: CUSTOS -->
+<section class="sec" id="s10">
+  <div class="kg g4">
+    <div class="kc danger"><div class="kl">Custo Total</div><div class="kv danger">R$2.468.560</div><div class="ks">todos os lançamentos</div></div>
+    <div class="kc danger"><div class="kl">Custo Fixo Est.</div><div class="kv danger">R$1.188.046</div><div class="ks">Aquisição+Seguro+Desp.+Rastread.</div></div>
+    <div class="kc warn"><div class="kl">Custo Variável Est.</div><div class="kv warn">R$1.216.208</div><div class="ks">Diesel+Comissão+Manut.+Outros</div></div>
+    <div class="kc warn"><div class="kl">Custo vs Receita</div><div class="kv warn">104,8%</div><div class="ks">custo 4,8% acima da receita</div></div>
+  </div>
+  <div class="cg cg2">
+    <div class="cb"><div class="ct">Top 8 Planos de Conta — Custo Total (R$)</div><div class="ch" style="height:280px"><canvas id="c_cust_rank"></canvas></div></div>
+    <div class="cb"><div class="ct">Participação Percentual por Categoria</div><div class="ch" style="height:280px"><canvas id="c_cust_pizza"></canvas></div></div>
+  </div>
+  <div class="st"><span class="st-dot"></span>Ranking Completo — Custos por Plano de Conta</div>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th>Plano de Conta</th><th>Custo Total (R$)</th><th>% do Total</th><th>Tipo</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="b c">1</td><td class="b">🏗 Aquisição de Veículo</td><td class="mn danger">1.126.085,62</td><td class="danger">45,6%</td><td><span class="bx brd">FIXO</span></td><td><span class="bx brd">🔴 DOMINANTE</span></td></tr>
+      <tr><td class="b c">2</td><td class="b">⛽ Combustível</td><td class="mn danger">781.408,56</td><td class="danger">31,7%</td><td><span class="bx bwa">VARIÁVEL</span></td><td><span class="bx brd">🔴 ALTO</span></td></tr>
+      <tr><td class="b c">3</td><td class="b">💵 Comissão Motoristas</td><td class="mn">256.350,74</td><td>10,4%</td><td><span class="bx bwa">VARIÁVEL</span></td><td><span class="bx bwa">🟡 MÉDIO</span></td></tr>
+      <tr><td class="b c">4</td><td class="b">🔩 Peça / Acessório</td><td class="mn">106.254,34</td><td>4,3%</td><td><span class="bx bwa">VARIÁVEL</span></td><td><span class="bx bwa">🟡 MÉDIO</span></td></tr>
+      <tr><td class="b c">5</td><td class="b">🔧 Mão-de-Obra Mec./Elét.</td><td class="mn">91.900,94</td><td>3,7%</td><td><span class="bx bwa">VARIÁVEL</span></td><td><span class="bx bwa">🟡 MÉDIO</span></td></tr>
+      <tr><td class="b c">6</td><td class="b">🛡 Seguro Veículo</td><td class="mn">28.796,82</td><td>1,2%</td><td><span class="bx brd">FIXO</span></td><td><span class="bx bem">🟢 BAIXO</span></td></tr>
+      <tr><td class="b c">7</td><td class="b">🧪 Arla</td><td class="mn">22.047,96</td><td>0,9%</td><td><span class="bx bwa">VARIÁVEL</span></td><td><span class="bx bem">🟢 BAIXO</span></td></tr>
+      <tr><td class="b c">8</td><td class="b">📋 Despachante</td><td class="mn">21.800,18</td><td>0,9%</td><td><span class="bx brd">FIXO</span></td><td><span class="bx bem">🟢 BAIXO</span></td></tr>
+      <tr><td class="b c">9</td><td class="b">📤 Rescisão</td><td class="mn">20.778,11</td><td>0,8%</td><td><span class="bx bwa">VARIÁVEL</span></td><td><span class="bx bem">🟢 BAIXO</span></td></tr>
+      <tr><td class="b c">10</td><td class="b">📍 Aquisição Rastreador</td><td class="mn">11.363,50</td><td>0,5%</td><td><span class="bx brd">FIXO</span></td><td><span class="bx bem">🟢 BAIXO</span></td></tr>
+      <tr class="tot"><td colspan="2" class="b">📊 TOTAL</td><td class="mn danger">2.468.560,37</td><td class="danger">100%</td><td>—</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+</div><!-- /content -->
+</div><!-- /main -->
+
+<div style="background:var(--ink2);border-top:1px solid var(--border);text-align:center;padding:10px;font-size:0.6429rem;color:var(--text3)">
+  OTTO TRANSPORTES · PAINEL DIRETOR · MARÇO/2026 · Torre de Controle Executiva — Diretoria/CFO · Dados: relcustoveiculo_2026-03-23.xlsx · v9.0
+</div>
+</div></div><!-- /scroll-root-inner /scroll-root -->
+
+<script>
+// ── CLOCK ──
+function tick(){
+  const now=new Date();
+  const d=now.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+  const t=now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('dt-date').textContent=d;
+  document.getElementById('dt-time').textContent=t;
+}
+tick();setInterval(tick,1000);
+
+// ── PAGE HEADERS ──
+const headers={
+  s5:{title:'Dashboard <em>CFO</em> — Financeiro',sub:'Resultado financeiro detalhado · Estrutura de custos · Análise por plano de conta'},
+  s7:{title:'⛽ Análise de <em>Combustível</em>',sub:'120.694 litros · R$781.409 · 31,7% do custo total · postos analisados'},
+  s4:{title:'📊 <em>Dashboard</em> Executivo',sub:'Visão consolidada executiva · Março/2026 · 23 dias operacionais com faturamento'},
+  s8:{title:'🔧 Controle de <em>Manutenção</em>',sub:'INTERNA = REQUISICAO-DESPESA · EXTERNA = ORDEM_COMPRA- · Classificação definitiva'},
+  s9:{title:'📡 <em>Disponibilidade</em> da Frota',sub:'Cavalos Mecânicos e Tocos · 45 veículos operacionais · Meta: 90-95%'},
+  s6:{title:'🏆 Faturamento por <em>Placa</em>',sub:'Top veículos por faturamento, lucro e custo · Dados reais calculados da base'},
+  s11:{title:'🎯 <em>Diagnóstico</em> Executivo',sub:'Situação completa · Gargalos · Oportunidades · Plano de ação imediata'},
+  s1:{title:'🔍 <em>Auditoria</em> — Qualidade dos Dados',sub:'Auditoria concluída em 21/03/2026 · Base validada · 6 inconsistências corrigidas'},
+  s2:{title:'🗄 <em>Padrão</em> — Base de Dados Brutos',sub:'Camada RAW · Origem primária · 1.450 registros · 38 colunas · Março/2026'},
+  s3:{title:'🧠 <em>BASE_DADOS</em> — Núcleo Analítico',sub:'Camada de consolidação · Dados tratados · Fonte para todos os painéis'},
+  s10:{title:'💼 <em>Custos</em> — Dashboard de Pressão Financeira',sub:'Custos fixos × variáveis · Top planos de conta · Análise de pressão operacional'},
+};
+
+// ── NAVIGATION ──
+function go(id,el){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  el.classList.add('on');
+  const h=headers[id];
+  if(h){
+    document.getElementById('pageTitle').innerHTML=h.title;
+    document.getElementById('pageSub').textContent=h.sub;
+  }
+  iosScrollTop();
+}
+
+// ── CHARTS ──
+const C={
+  gold:'#E8B04A',goldf:'#F5C842',em:'#00D4AA',danger:'#FF3D5A',warn:'#FFB020',blue:'#3B9EFF',gray:'#4A587A',
+  goldd:'rgba(232,176,74,.75)',emd:'rgba(0,212,170,.75)',dangerd:'rgba(255,61,90,.75)',warnd:'rgba(255,176,32,.75)',blued:'rgba(59,158,255,.75)'
+};
+function sc(axis='y'){
+  const c={ticks:{color:'#556080'},grid:{color:'rgba(255,255,255,.04)'}};
+  const x={ticks:{color:'#8090B0'},grid:{display:false}};
+  return axis==='x'?{x:c,y:x}:{x:x,y:c};
+}
+const pDL={id:'pdl',afterDatasetsDraw(c){const{ctx}=c;c.getDatasetMeta(0).data.forEach((el,i)=>{const v=c.data.datasets[0].data[i];const pos=el.tooltipPosition(false);ctx.save();ctx.fillStyle='#D8E2F5';ctx.font='bold 10px DM Mono,monospace';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(v.toLocaleString('pt-BR'),pos.x,pos.y-6);ctx.restore();});}};
+const DL={id:'dl',afterDatasetsDraw(c){c.data.datasets.forEach((_,di)=>{c.getDatasetMeta(di).data.forEach((bar,i)=>{const v=c.data.datasets[di].data[i];if(!v)return;const{ctx}=c;const pos=bar.tooltipPosition(false);ctx.save();ctx.fillStyle='#D8E2F5';ctx.font='bold 9px DM Mono,monospace';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(Math.abs(v).toLocaleString('pt-BR'),pos.x,pos.y-3);ctx.restore();});});}};
+const hDL={id:'hdl',afterDatasetsDraw(c){c.data.datasets.forEach((_,di)=>{c.getDatasetMeta(di).data.forEach((bar,i)=>{const v=c.data.datasets[di].data[i];if(!v)return;const{ctx}=c;const pos=bar.tooltipPosition(false);ctx.save();ctx.fillStyle='#D8E2F5';ctx.font='bold 9px DM Mono,monospace';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(v.toLocaleString('pt-BR'),pos.x+6,pos.y);ctx.restore();});});}};
+
+new Chart('c_dias',{type:'bar',data:{labels:['01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23'],datasets:[{label:'Receita',data:[84,35.5,25.2,64.5,95.2,124.2,79.9,81.8,41.2,160.9,145,100.5,110.9,52.2,12.2,194.1,165.5,128.3,61,90,81.8,78.9,158.2],backgroundColor:C.emd,borderRadius:3},{label:'Custo',data:[84.4,158.6,53.4,165.4,147.4,95.7,130.4,34.7,85.3,89.1,80,59.7,86,73.8,274.2,107.7,135.7,87.9,77.5,111,6.7,96.9,12.2],backgroundColor:C.dangerd,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8090B0',boxWidth:10,padding:12}}},scales:{x:{ticks:{color:'#8090B0'},grid:{display:false}},y:{ticks:{color:'#556080',callback:v=>v+'k'},grid:{color:'rgba(255,255,255,.04)'}}}},plugins:[DL]});
+
+new Chart('c_situacao',{type:'doughnut',data:{labels:['Em Viagem (22) 48,9%','Parado (23) 51,1%','Oficina (0)'],datasets:[{data:[22,23,0],backgroundColor:[C.em,C.danger,C.warn],borderWidth:0,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{color:'#8090B0',boxWidth:12,padding:14}}}},plugins:[pDL]});
+
+new Chart('c_tipofrota',{type:'bar',data:{labels:['Rodotrem','LS','LS Antigo','ISOESTE'],datasets:[{label:'Receita',data:[2073055,72969,29000,180000],backgroundColor:C.emd,borderRadius:4},{label:'Custo',data:[1958157,89706,34066,75387],backgroundColor:C.dangerd,borderRadius:4},{label:'Resultado',data:[114898,-16737,-5066,104613],backgroundColor:[C.emd,C.dangerd,C.dangerd,C.emd],borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8090B0',boxWidth:10,padding:12}}},scales:sc()},plugins:[DL]});
+
+new Chart('c_equip',{type:'doughnut',data:{labels:['Cavalo Mec. (41)','Toco (4)','Carreta/Reboque (64)'],datasets:[{data:[41,4,64],backgroundColor:[C.gold,C.blue,C.gray],borderWidth:0,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'bottom',labels:{color:'#8090B0',boxWidth:12,padding:12}}}},plugins:[pDL]});
+
+new Chart('c_custocomp',{type:'doughnut',data:{labels:['Aquisição Veíc.','Combustível','Comissão','Peça/Acess.','Mão-de-Obra','Seguro','Outros'],datasets:[{data:[1126086,781409,256351,106254,91901,28797,77762],backgroundColor:[C.danger,C.warn,C.blue,C.gold,C.em,'#7C5CBF','#4A587A'],borderWidth:0,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'bottom',labels:{color:'#8090B0',boxWidth:10,padding:8,font:{size:10}}}}},plugins:[pDL]});
+
+new Chart('c_frotafin',{type:'bar',data:{labels:['Rodotrem','LS','LS Antigo','ISOESTE'],datasets:[{label:'Receita',data:[2073055,72969,29000,180000],backgroundColor:C.emd,borderRadius:4},{label:'Custo',data:[1958157,89706,34066,75387],backgroundColor:C.dangerd,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8090B0',boxWidth:10,padding:12}}},scales:sc()},plugins:[DL]});
+
+new Chart('c_rank_rec',{type:'bar',data:{labels:['TFY2E81','RBT1J38','TFT3D01','RBT1J48','RBT1I18','JBW8J64','SDK7G21','SDO5I30','SDO5C30','TFI9B38'],datasets:[{label:'Receita',data:[102212,78831,77895,76901,74795,74795,74295,72757,68895,68795],backgroundColor:C.emd,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:sc('x')},plugins:[hDL]});
+
+new Chart('c_rank_cus',{type:'bar',data:{labels:['TFY2E81','TGN3H72','RBT1J48','SCR1D58','SDK7G21','TFT3D01','SDO5I30','RBS9J98','RBT1I18','SDO5C30'],datasets:[{label:'Custo',data:[76794,72925,72177,70773,69016,66697,66605,66392,65986,62059],backgroundColor:C.dangerd,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:sc('x')},plugins:[hDL]});
+
+new Chart('c_comb_veic',{type:'bar',data:{labels:['TGN3H72','TFY2E81','RBT1J48','SDE2A56','RBS9J98','SDO5C30','SDO5I30','SDD9J07','FRA8F45','JBW8J64'],datasets:[{label:'Custo Diesel',data:[38063,30094,28583,28219,25873,25585,25468,25157,24756,24722],backgroundColor:C.warnd,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:sc('x')},plugins:[hDL]});
+
+new Chart('c_postos',{type:'bar',data:{labels:['Otto','Arco Iris','Guerra Pet.','Aut. Guerra','P. Barão','P.7 Araras','Arco Iris Ros.','Rodoposto Tur.','Monte Carlo','Graal Tur.'],datasets:[{label:'Custo (R$)',data:[224831,106672,69231,38189,36934,32187,29362,26784,23822,19927],backgroundColor:C.warnd,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:sc('x')},plugins:[hDL]});
+
+new Chart('c_man_tipo',{type:'doughnut',data:{labels:['EXTERNA (ORDEM_COMPRA-) 95,2%','INTERNA (REQUISICAO-DESPESA) 4,8%'],datasets:[{data:[195650,9801],backgroundColor:[C.danger,C.em],borderWidth:0,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{color:'#8090B0',boxWidth:12,padding:12,font:{size:11}}}}},plugins:[pDL]});
+
+new Chart('c_man_plano',{type:'bar',data:{labels:['Peça/Acessório','Mão-de-Obra Mec.','Lavajato','Pneu Recapagem'],datasets:[{label:'Custo (R$)',data:[106129,90034,6810,380],backgroundColor:[C.dangerd,C.dangerd,C.warnd,C.emd],borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:sc('x')},plugins:[hDL]});
+
+new Chart('c_disp_pizza',{type:'doughnut',data:{labels:['Em Viagem (22) 48,9%','Parado (23) 51,1%','Oficina (0)'],datasets:[{data:[22,23,0],backgroundColor:[C.em,C.danger,C.warn],borderWidth:0,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{color:'#8090B0',boxWidth:12,padding:14}}}},plugins:[pDL]});
+
+new Chart('c_disp_tipo',{type:'bar',data:{labels:['Cavalo Mec.','Rodotrem','LS','LS Antigo','ISOESTE'],datasets:[{label:'% Disponível',data:[53.7,54.1,50,50,0],backgroundColor:[C.warnd,C.warnd,C.warnd,C.warnd,C.dangerd],borderRadius:6},{label:'Meta (90%)',data:[90,90,90,90,90],type:'line',borderColor:C.em+'80',borderDash:[5,5],pointRadius:0,fill:false,tension:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8090B0',boxWidth:10,padding:12}}},scales:{x:{ticks:{color:'#8090B0'},grid:{display:false}},y:{max:100,ticks:{color:'#556080',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.04)'}}}},plugins:[{id:'dtdl',afterDatasetsDraw(c){const{ctx}=c;c.getDatasetMeta(0).data.forEach((bar,j)=>{const v=c.data.datasets[0].data[j];const pos=bar.tooltipPosition(false);ctx.save();ctx.fillStyle='#D8E2F5';ctx.font='bold 11px DM Mono,monospace';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(v+'%',pos.x,pos.y-4);ctx.restore();});}}]});
+
+new Chart('c_cust_rank',{type:'bar',data:{labels:['Aquisição','Combustível','Comissão','Peça/Acess.','Mão-de-Obra','Seguro','Arla','Despachante'],datasets:[{label:'Custo (R$)',data:[1126086,781409,256351,106254,91901,28797,22048,21800],backgroundColor:[C.dangerd,C.warnd,C.blued,C.goldd,C.emd,'#7C5CBF80','#8B6F4780','#4A587A80'],borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:sc('x')},plugins:[hDL]});
+
+new Chart('c_cust_pizza',{type:'doughnut',data:{labels:['Aquisição Veíc.','Combustível','Comissão','Peça/Acess.','Mão-de-Obra','Outros'],datasets:[{data:[1126086,781409,256351,106254,91901,106559],backgroundColor:[C.danger,C.warn,C.blue,C.gold,C.em,'#4A587A'],borderWidth:0,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'bottom',labels:{color:'#8090B0',boxWidth:10,padding:8,font:{size:10}}}}},plugins:[pDL]});
+
+// ══ SELETOR DE TELA ══════════════════════════════════════════════════
+const SCREEN_SIZES = {
+  'sm':10,'sm-lg':11,'tab':12,'tab-lg':13,
+  'nb':14,'pc':15,'pc-l':16,
+  't30':16,'t32':17,'t40':18,'t43':20,'t45':21,'t50':22,'t55':23,'t60':25,'t65':27
+};
+let _scrOpen = false;
+function setScreen(key){
+  var px=SCREEN_SIZES[key]; if(!px) return;
+  document.documentElement.style.fontSize=px+'px';
+  document.querySelectorAll('.scr-item').forEach(function(el){ el.classList.toggle('on',el.dataset.sc===key); });
+  scrClose();
+  try{ localStorage.setItem('ottoScreen',key); }catch(e){}
+  // Redimensionar todos os charts Chart.js
+  try{
+    Object.values(Chart.instances).forEach(function(c){ c.resize(); });
+  }catch(e){}
+  // Forçar relayout do scroll-root (altura das barras mudou)
+  var sr=document.getElementById('scroll-root');
+  if(sr){ sr.style.display='none'; sr.offsetHeight; sr.style.display=''; }
+}
+function scrToggle(e){
+  if(e){ e.stopPropagation(); e.preventDefault(); }
+  var m=document.getElementById('scr-menu'); if(!m) return;
+  _scrOpen=!_scrOpen; m.style.display=_scrOpen?'block':'none';
+}
+function scrClose(){ _scrOpen=false; var m=document.getElementById('scr-menu'); if(m) m.style.display='none'; }
+document.addEventListener('click',function(e){ var w=document.getElementById('scr-wrap'); if(w&&!w.contains(e.target)) scrClose(); });
+document.addEventListener('touchstart',function(e){ var w=document.getElementById('scr-wrap'); if(w&&!w.contains(e.target)) scrClose(); },{passive:true});
+(function(){
+  try{
+    var saved=localStorage.getItem('ottoScreen');
+    var key=(saved&&SCREEN_SIZES[saved])?saved:'nb';
+    document.documentElement.style.fontSize=SCREEN_SIZES[key]+'px';
+    document.querySelectorAll('.scr-item').forEach(function(el){ el.classList.toggle('on',el.dataset.sc===key); });
+  }catch(e){ document.documentElement.style.fontSize='14px'; }
+})();
+// ════════════════════════════════════════════════════════════════════
+
+// ── iOS scroll helpers ──
+function getSR(){ return document.getElementById('scroll-root'); }
+function iosScrollTop(){ var el=getSR(); if(el) el.scrollTop=0; else{ try{window.scrollTo(0,0);}catch(e){document.documentElement.scrollTop=0;} } }
+function iosGetScrollY(){ var el=getSR(); return el?el.scrollTop:(window.pageYOffset||document.documentElement.scrollTop||0); }
+function iosGetScrollHeight(){ var el=getSR(); if(!el) return 0; return Math.max(0,el.scrollHeight-el.clientHeight-10); }
+function iosScrollTo(y){ var el=getSR(); if(el) el.scrollTop=y; else{ try{window.scrollTo(0,y);}catch(e){} } }
+function iosScrollBy(dy){ var el=getSR(); if(el) el.scrollTop+=dy; else iosScrollTo(iosGetScrollY()+dy); }
+function iosScrollSmoothTo(y){ var el=getSR(); if(!el){ try{window.scrollTo({top:y,behavior:'smooth'});}catch(e){iosScrollTo(y);} return; } try{ el.scrollTo({top:Math.max(0,y),behavior:'smooth'}); }catch(e){ el.scrollTop=Math.max(0,y); } }
+
+// RAF polyfill iOS
+window.requestAnimationFrame=window.requestAnimationFrame||window.webkitRequestAnimationFrame||window.mozRequestAnimationFrame||function(cb){ return setTimeout(cb,16); };
+window.cancelAnimationFrame=window.cancelAnimationFrame||window.webkitCancelAnimationFrame||function(id){ clearTimeout(id); };
+
+// ══ CASCATA DE ABAS ══════════════════════════════════════════════════
+// Abas da Torre de Controle Otto v8 (ordem de exibição)
+const CS_MODULES         = ['s5','s7','s4','s8','s9','s6','s11','s1','s2','s3','s10'];
+const CS_PAGE_SPEED      = 0.8;
+const CS_INNER_SPEED     = 0.8;
+const CS_PAUSE_START_MS  = 1500;
+const CS_PAUSE_INNER_MS  = 3000;
+const CS_PAUSE_END_MS    = 4000;
+
+const MLABEL = {
+  s5:'CFO Financeiro', s7:'Combustível', s4:'Dash Executivo',
+  s8:'Manutenção', s9:'Disponibilidade', s6:'Faturamento/Placa',
+  s11:'Diagnóstico', s1:'Auditoria', s2:'Padrão RAW',
+  s3:'BASE_DADOS', s10:'Custos'
+};
+
+let csModuleIdx = 0;
+let csActive    = true;
+let csScrollRAF = null;
+let csPhase     = 'idle';
+
+// ── Barra de controle ────────────────────────────────────────────────
+const ctrlBar = document.createElement('div');
+ctrlBar.innerHTML = `<div id="cbar" style="
+  position:fixed;bottom:0;left:0;right:0;z-index:9999;
+  background:rgba(7,9,15,.97);border-top:2px solid var(--gold);
+  padding:0 24px;height:4rem;display:flex;align-items:center;gap:16px;
+  font-family:'DM Sans',sans-serif;
+">
+  <div style="display:flex;align-items:center;gap:7px;flex-shrink:0">
+    <div id="cs-dot" style="width:10px;height:10px;border-radius:50%;background:#00D4AA;animation:blink 1.2s infinite;flex-shrink:0"></div>
+    <span id="cs-mode" style="font-family:'Rajdhani',sans-serif;font-size:1.0714rem;font-weight:700;letter-spacing:2px;color:#00D4AA">PÁGINA</span>
+  </div>
+  <div id="cs-current" style="font-size:0.8571rem;font-weight:600;color:var(--goldf);flex-shrink:0;min-width:200px"></div>
+  <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+    <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+      <span id="cs-bar-lbl" style="font-size:0.7143rem;color:var(--text3);letter-spacing:1px">ROLAGEM DA PÁGINA</span>
+      <span id="cs-scroll-pct" style="font-family:'DM Mono',monospace;font-size:0.7857rem;color:var(--text2)">0%</span>
+    </div>
+    <div style="height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden">
+      <div id="cs-scroll-bar" style="height:100%;background:var(--gold);border-radius:3px;width:0%;transition:none"></div>
+    </div>
+  </div>
+  <div id="cs-inner-wrap" style="flex-shrink:0;min-width:180px;display:none;flex-direction:column;gap:2px">
+    <span id="cs-inner-lbl" style="font-size:0.7143rem;color:#3B9EFF;letter-spacing:1px">TABELA INTERNA</span>
+    <div style="height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;width:180px">
+      <div id="cs-inner-bar" style="height:100%;background:#3B9EFF;border-radius:3px;width:0%;transition:none"></div>
+    </div>
+  </div>
+  <div id="cs-next" style="font-size:0.7143rem;color:var(--text3);flex-shrink:0;min-width:160px;text-align:center"></div>
+  <div style="display:flex;gap:8px;flex-shrink:0">
+    <button id="cs-btn-pause" onclick="csToggle()" style="
+      background:rgba(255,255,255,.04);border:1px solid var(--gold);color:var(--goldf);
+      padding:6px 16px;border-radius:4px;font-size:0.8571rem;font-weight:700;
+      font-family:'DM Sans',sans-serif;letter-spacing:.5px;cursor:pointer;
+    ">⏸ PAUSAR</button>
+    <button onclick="csSkip()" style="
+      background:rgba(255,255,255,.04);border:1px solid var(--border2);color:var(--text2);
+      padding:6px 16px;border-radius:4px;font-size:0.8571rem;font-weight:700;
+      font-family:'DM Sans',sans-serif;letter-spacing:.5px;cursor:pointer;
+    ">⏭ PULAR ABA</button>
+  </div>
+</div>`;
+document.body.appendChild(ctrlBar);
+
+// ── Helpers UI ───────────────────────────────────────────────────────
+function csUpdateUI(){
+  const nextMI=(csModuleIdx+1)%CS_MODULES.length;
+  const cur=document.getElementById('cs-current');
+  const nxt=document.getElementById('cs-next');
+  if(cur) cur.textContent='📍 '+MLABEL[CS_MODULES[csModuleIdx]];
+  if(nxt) nxt.textContent='▶ próxima: '+MLABEL[CS_MODULES[nextMI]];
+}
+function csSetBar(pct,barId='cs-scroll-bar',pctId='cs-scroll-pct'){
+  const b=document.getElementById(barId); const p=document.getElementById(pctId);
+  if(b) b.style.width=Math.min(100,pct)+'%';
+  if(p) p.textContent=Math.round(Math.min(100,pct))+'%';
+}
+function csSetMode(label,color,barLabel='ROLAGEM DA PÁGINA'){
+  const dot=document.getElementById('cs-dot'); const lbl=document.getElementById('cs-mode'); const bl=document.getElementById('cs-bar-lbl');
+  if(dot){ dot.style.background=color; dot.style.animation=(label==='PAUSA'||label==='MANUAL')?'none':'blink 1.2s infinite'; }
+  if(lbl){ lbl.style.color=color; lbl.textContent=label; }
+  if(bl) bl.textContent=barLabel;
+}
+function csShowInnerBar(show,label=''){
+  const w=document.getElementById('cs-inner-wrap'); const l=document.getElementById('cs-inner-lbl');
+  if(w) w.style.display=show?'flex':'none';
+  if(l&&label) l.textContent=label;
+  if(!show) csSetBar(0,'cs-inner-bar');
+}
+
+// ── Ativar aba ───────────────────────────────────────────────────────
+function csActivateTab(mIdx){
+  csModuleIdx=mIdx;
+  const tabId=CS_MODULES[mIdx];
+  // Usar a função go() existente — encontrar o elemento da aba
+  const tabEl=document.querySelector('.tab[data-t="'+tabId+'"]');
+  if(tabEl) go(tabId,tabEl);
+  csUpdateUI();
+}
+
+// ── Containers internos com scroll ───────────────────────────────────
+function csGetInnerScrollables(){
+  const activePane=document.getElementById(CS_MODULES[csModuleIdx]);
+  if(!activePane) return [];
+  return Array.from(activePane.querySelectorAll('.tw')).filter(el=>el.scrollHeight>el.clientHeight+8);
+}
+
+// ── Rolar container interno ──────────────────────────────────────────
+function csScrollInner(el,onDone){
+  if(!csActive){ onDone(); return; }
+  el.style.outline='2px solid var(--gold)';
+  el.style.outlineOffset='2px';
+  el.style.boxShadow='0 0 16px rgba(200,130,10,.3)';
+  el.scrollTop=0;
+  var _sr=getSR();
+  var _srRect=_sr?_sr.getBoundingClientRect():{top:100};
+  var elRect=el.getBoundingClientRect();
+  iosScrollSmoothTo(Math.max(0,iosGetScrollY()+elRect.top-_srRect.top-12));
+  const th=el.querySelector('th');
+  const label=th?('TABELA: '+th.textContent.trim().toUpperCase()):'TABELA INTERNA';
+  csShowInnerBar(true,label);
+  csSetMode('TABELA INTERNA','#3B9EFF','ROLAGEM INTERNA');
+  setTimeout(()=>{
+    if(!csActive){ csCleanInner(el); onDone(); return; }
+    function scrollIt(){
+      if(!csActive){ csCleanInner(el); onDone(); return; }
+      const maxS=el.scrollHeight-el.clientHeight;
+      const pct=maxS>0?(el.scrollTop/maxS)*100:100;
+      csSetBar(pct,'cs-inner-bar');
+      if(el.scrollTop<maxS-2){ el.scrollTop+=CS_INNER_SPEED; csScrollRAF=requestAnimationFrame(scrollIt); }
+      else{ el.scrollTop=maxS; csSetBar(100,'cs-inner-bar'); setTimeout(()=>{ csCleanInner(el); onDone(); },CS_PAUSE_INNER_MS); }
+    }
+    csScrollRAF=requestAnimationFrame(scrollIt);
+  },500);
+}
+function csCleanInner(el){
+  el.style.outline=''; el.style.outlineOffset=''; el.style.boxShadow='';
+  csShowInnerBar(false); csSetMode('PÁGINA','#00D4AA','ROLAGEM DA PÁGINA');
+}
+function csProcessInnerQueue(queue,onAllDone){
+  if(!csActive||queue.length===0){ onAllDone(); return; }
+  const next=queue.shift();
+  csScrollInner(next,()=>{ if(!csActive){ onAllDone(); return; } csProcessInnerQueue(queue,onAllDone); });
+}
+
+// ── Rolagem da página ─────────────────────────────────────────────────
+function csStartScroll(){
+  if(!csActive){ csPhase='idle'; return; }
+  csPhase='scrolling';
+  csSetMode('PÁGINA','#00D4AA','ROLAGEM DA PÁGINA');
+  csSetBar(0); csShowInnerBar(false);
+  iosScrollTop();
+  setTimeout(()=>{
+    if(!csActive){ csPhase='idle'; return; }
+    function scrollPage(){
+      if(!csActive){ csPhase='idle'; return; }
+      const maxS=Math.max(0,iosGetScrollHeight());
+      if(maxS<=0){ csAfterPageScroll(); return; }
+      const pct=Math.min(100,(iosGetScrollY()/maxS)*100);
+      csSetBar(pct);
+      if(iosGetScrollY()<maxS-1){ iosScrollBy(CS_PAGE_SPEED); csScrollRAF=requestAnimationFrame(scrollPage); }
+      else{ csSetBar(100); csAfterPageScroll(); }
+    }
+    csScrollRAF=requestAnimationFrame(scrollPage);
+  },CS_PAUSE_START_MS);
+}
+function csAfterPageScroll(){
+  if(!csActive){ csPhase='idle'; return; }
+  csPhase='inner';
+  const innerList=csGetInnerScrollables();
+  if(innerList.length===0){ csEndOfTab(); return; }
+  iosScrollSmoothTo(0);
+  setTimeout(()=>{ csProcessInnerQueue([...innerList],()=>{ if(csActive) csEndOfTab(); }); },600);
+}
+function csEndOfTab(){
+  if(!csActive){ csPhase='idle'; return; }
+  csPhase='pausing';
+  csSetMode('PAUSA','var(--goldf)','PRÓXIMA ABA EM BREVE');
+  setTimeout(()=>{ if(!csActive){ csPhase='idle'; return; } csNextTab(); },CS_PAUSE_END_MS);
+}
+function csNextTab(){
+  if(csScrollRAF){ cancelAnimationFrame(csScrollRAF); csScrollRAF=null; }
+  csSetBar(0); csShowInnerBar(false);
+  const newMI=(csModuleIdx+1)%CS_MODULES.length;
+  csActivateTab(newMI);
+  iosScrollTop();
+  setTimeout(()=>{ if(csActive) csStartScroll(); },700);
+}
+function csToggle(){
+  csActive=!csActive;
+  const btn=document.getElementById('cs-btn-pause');
+  if(csActive){
+    if(btn){ btn.textContent='⏸ PAUSAR'; btn.style.borderColor='var(--gold)'; btn.style.color='var(--goldf)'; }
+    document.querySelectorAll('.tw').forEach(el=>{ el.style.outline=''; el.style.boxShadow=''; });
+    csShowInnerBar(false); csStartScroll();
+  } else {
+    if(csScrollRAF){ cancelAnimationFrame(csScrollRAF); csScrollRAF=null; }
+    csPhase='idle';
+    csSetMode('PAUSA','#FFB020','PAUSADO');
+    if(btn){ btn.textContent='▶ RETOMAR'; btn.style.borderColor='#00D4AA'; btn.style.color='#00D4AA'; }
+  }
+}
+function csSkip(){
+  if(csScrollRAF){ cancelAnimationFrame(csScrollRAF); csScrollRAF=null; }
+  document.querySelectorAll('.tw').forEach(el=>{ el.style.outline=''; el.style.boxShadow=''; });
+  csShowInnerBar(false); csPhase='idle';
+  if(csActive) csNextTab();
+}
+
+// Pausa ao clicar manualmente em aba
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if(csActive){
+      if(csScrollRAF){ cancelAnimationFrame(csScrollRAF); csScrollRAF=null; }
+      document.querySelectorAll('.tw').forEach(el=>{ el.style.outline=''; el.style.boxShadow=''; });
+      csShowInnerBar(false);
+      csActive=false; csPhase='idle';
+      const b=document.getElementById('cs-btn-pause');
+      if(b){ b.textContent='▶ RETOMAR'; b.style.borderColor='#00D4AA'; b.style.color='#00D4AA'; }
+      csSetMode('MANUAL','#7A8BAB','CONTROLE MANUAL');
+    }
+  });
+});
+
+// ══ AUTO-RELOAD INTELIGENTE ══════════════════════════════════════════
+// Verifica Last-Modified/ETag do arquivo. Se mudou → salva estado → recarrega.
+// Após reload → restaura aba, scroll, tela e cascata exatamente onde parou.
+
+const AR_INTERVAL_MS  = 15000;  // checar a cada 15 segundos
+const AR_STATE_KEY    = 'ottoReloadState';
+const AR_ETAG_KEY     = 'ottoLastETag';
+
+// ── Salvar estado completo ────────────────────────────────────────────
+function arSaveState(){
+  try{
+    const state = {
+      moduleIdx : csModuleIdx,
+      scrollY   : iosGetScrollY(),
+      csActive  : csActive,
+      screen    : (function(){ try{ return localStorage.getItem('ottoScreen')||'nb'; }catch(e){ return 'nb'; } })(),
+      ts        : Date.now()
+    };
+    localStorage.setItem(AR_STATE_KEY, JSON.stringify(state));
+  }catch(e){}
+}
+
+// ── Restaurar estado após reload ─────────────────────────────────────
+function arRestoreState(){
+  try{
+    const raw = localStorage.getItem(AR_STATE_KEY);
+    if(!raw) return;
+    const state = JSON.parse(raw);
+    // Só restaura se o estado foi salvo há menos de 30 segundos (reload recente)
+    if(!state || (Date.now() - state.ts) > 30000) return;
+
+    // 1. Restaurar tela
+    if(state.screen && SCREEN_SIZES[state.screen]){
+      document.documentElement.style.fontSize = SCREEN_SIZES[state.screen]+'px';
+      document.querySelectorAll('.scr-item').forEach(function(el){
+        el.classList.toggle('on', el.dataset.sc === state.screen);
+      });
+    }
+
+    // 2. Restaurar aba ativa
+    const mIdx = (typeof state.moduleIdx === 'number' && state.moduleIdx >= 0 && state.moduleIdx < CS_MODULES.length)
+      ? state.moduleIdx : 0;
+    csActivateTab(mIdx);
+
+    // 3. Restaurar posição de scroll
+    if(state.scrollY && state.scrollY > 0){
+      setTimeout(()=>{ iosScrollTo(state.scrollY); }, 300);
+    }
+
+    // 4. Restaurar cascata
+    csActive = (state.csActive !== false);
+    const btn = document.getElementById('cs-btn-pause');
+    if(csActive){
+      if(btn){ btn.textContent='⏸ PAUSAR'; btn.style.borderColor='var(--gold)'; btn.style.color='var(--goldf)'; }
+      setTimeout(()=>{ if(csActive) csStartScroll(); }, 1200);
+    } else {
+      csSetMode('PAUSA','#FFB020','PAUSADO');
+      if(btn){ btn.textContent='▶ RETOMAR'; btn.style.borderColor='#00D4AA'; btn.style.color='#00D4AA'; }
+    }
+
+    // Limpar estado após restaurar
+    localStorage.removeItem(AR_STATE_KEY);
+
+  }catch(e){
+    // Fallback: início normal
+    csActivateTab(0);
+    setTimeout(()=>{ if(csActive) csStartScroll(); },900);
+  }
+}
+
+// ── Verificar mudança no arquivo ─────────────────────────────────────
+let arChecking = false;
+
+function arCheck(){
+  if(arChecking) return;
+  arChecking = true;
+
+  // Busca apenas o header do próprio arquivo (sem baixar o conteúdo)
+  fetch(window.location.href, { method:'HEAD', cache:'no-store' })
+    .then(function(res){
+      arChecking = false;
+      if(!res.ok) return;
+
+      // Pega ETag ou Last-Modified (o que estiver disponível)
+      const etag    = res.headers.get('ETag')          || '';
+      const lastmod = res.headers.get('Last-Modified') || '';
+      const token   = etag || lastmod;
+
+      if(!token) return; // servidor não suporta headers → não recarrega
+
+      try{
+        const prev = localStorage.getItem(AR_ETAG_KEY);
+        if(!prev){
+          // Primeira checagem — apenas salvar o token atual
+          localStorage.setItem(AR_ETAG_KEY, token);
+          return;
+        }
+        if(prev !== token){
+          // Arquivo mudou! Salvar estado e recarregar
+          localStorage.setItem(AR_ETAG_KEY, token);
+          arSaveState();
+          // Pequeno delay para o localStorage ser gravado antes do reload
+          setTimeout(function(){ window.location.reload(true); }, 200);
+        }
+      }catch(e){}
+    })
+    .catch(function(){ arChecking = false; });
+}
+
+// ── Iniciar verificação periódica ─────────────────────────────────────
+// Só funciona com servidor HTTP (não file://)
+if(window.location.protocol !== 'file:'){
+  // Salvar token inicial
+  fetch(window.location.href, { method:'HEAD', cache:'no-store' })
+    .then(function(res){
+      if(!res.ok) return;
+      const token = res.headers.get('ETag') || res.headers.get('Last-Modified') || '';
+      if(token){
+        try{
+          const stored = localStorage.getItem(AR_ETAG_KEY);
+          if(!stored) localStorage.setItem(AR_ETAG_KEY, token);
+        }catch(e){}
+      }
+    }).catch(function(){});
+
+  setInterval(arCheck, AR_INTERVAL_MS);
+
+  // Indicador visual na topbar: ponto RELOAD
+  setTimeout(function(){
+    var liveB = document.querySelector('.live-badge');
+    if(liveB){
+      var dot = document.createElement('span');
+      dot.id = 'ar-dot';
+      dot.title = 'Auto-Reload ativo — verifica mudanças a cada 15s';
+      dot.style.cssText = 'width:6px;height:6px;background:#3B9EFF;border-radius:50%;display:inline-block;margin-left:6px;animation:pulse 2s infinite;';
+      liveB.appendChild(dot);
+    }
+  }, 500);
+
+} else {
+  // ── MODO file:// — fallback via fetch GET + hash do conteúdo ─────────
+  // Funciona quando o arquivo é aberto diretamente pelo navegador (file://)
+  // Faz fetch do próprio arquivo, calcula um hash simples do tamanho+trecho
+  // e recarrega se mudou.
+  let arFileHash = null;
+
+  function arFileCheck(){
+    if(arChecking) return;
+    arChecking = true;
+    fetch(window.location.href + '?_=' + Date.now(), { cache:'no-store' })
+      .then(function(res){ return res.text(); })
+      .then(function(text){
+        arChecking = false;
+        // Hash simples: tamanho + soma de char codes de pontos distribuídos
+        var len = text.length;
+        var step = Math.max(1, Math.floor(len / 200));
+        var sum = 0;
+        for(var i=0; i<len; i+=step){ sum += text.charCodeAt(i); }
+        var hash = len + '_' + (sum % 9999999);
+        if(arFileHash === null){
+          arFileHash = hash;
+          return;
+        }
+        if(arFileHash !== hash){
+          arFileHash = hash;
+          arSaveState();
+          setTimeout(function(){ window.location.reload(true); }, 200);
+        }
+      })
+      .catch(function(){ arChecking = false; });
+  }
+
+  setInterval(arFileCheck, AR_INTERVAL_MS);
+
+  // Indicador visual (laranja = modo file://)
+  setTimeout(function(){
+    var liveB = document.querySelector('.live-badge');
+    if(liveB){
+      var dot = document.createElement('span');
+      dot.id = 'ar-dot';
+      dot.title = 'Auto-Reload ativo (modo file://) — verifica mudanças a cada 15s';
+      dot.style.cssText = 'width:6px;height:6px;background:#FFB020;border-radius:50%;display:inline-block;margin-left:6px;animation:pulse 2s infinite;';
+      liveB.appendChild(dot);
+    }
+  }, 500);
+}
+// ════════════════════════════════════════════════════════════════════
+
+// ── INÍCIO ────────────────────────────────────────────────────────────
+// Verificar se há estado salvo de um reload recente
+(function(){
+  try{
+    const raw = localStorage.getItem(AR_STATE_KEY);
+    if(raw){
+      const state = JSON.parse(raw);
+      if(state && (Date.now() - state.ts) < 30000){
+        // Há estado recente → restaurar
+        arRestoreState();
+        return;
+      }
+    }
+  }catch(e){}
+  // Sem estado → início normal
+  csActivateTab(0);
+  setTimeout(()=>{ if(csActive) csStartScroll(); },900);
+})();
+
+</script>
+</body>
+</html>
